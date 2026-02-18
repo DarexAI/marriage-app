@@ -28,7 +28,7 @@ const OfficerDashboard = () => {
 const [applications, setApplications] = useState<Application[]>([]);
   const [viewApp, setViewApp] = useState<any>(null);
   const [scheduleApp, setScheduleApp] = useState<any>(null);
-  const [appointmentDate, setAppointmentDate] = useState("");
+  const [appointmentDate] = useState("");
   const [slotModal, setSlotModal] = useState(false);
   const [slotDate, setSlotDate] = useState("");
   const [startTime, setStartTime] = useState("");
@@ -66,26 +66,26 @@ const deleteCitizen = async (id: string) => {
 };
 
 
-  const scheduleAppointment = async () => {
-    await fetch(
-      `http://localhost:5000/api/officer/schedule/${scheduleApp._id}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ appointmentDate })
-      }
-    );
+  // const scheduleAppointment = async () => {
+  //   await fetch(
+  //     `http://localhost:5000/api/officer/schedule/${scheduleApp._id}`,
+  //     {
+  //       method: "PUT",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ appointmentDate })
+  //     }
+  //   );
 
-    setApplications(prev =>
-      prev.map(a =>
-        a._id === scheduleApp._id
-          ? { ...a, appointmentDate }
-          : a
-      )
-    );
+  //   setApplications(prev =>
+  //     prev.map(a =>
+  //       a._id === scheduleApp._id
+  //         ? { ...a, appointmentDate }
+  //         : a
+  //     )
+  //   );
 
-    setScheduleApp(null);
-  };
+  //   setScheduleApp(null);
+  // };
 
   const saveSlot = async () => {
     const officer = JSON.parse(localStorage.getItem("officer") || "{}");
