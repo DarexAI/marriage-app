@@ -27,8 +27,8 @@ appointmentSlot?: {
 const OfficerDashboard = () => {
 const [applications, setApplications] = useState<Application[]>([]);
   const [viewApp, setViewApp] = useState<any>(null);
-  const [scheduleApp, setScheduleApp] = useState<any>(null);
-  const [appointmentDate] = useState("");
+  // const [scheduleApp, setScheduleApp] = useState<any>(null);
+  // const [appointmentDate] = useState("");
   const [slotModal, setSlotModal] = useState(false);
   const [slotDate, setSlotDate] = useState("");
   const [startTime, setStartTime] = useState("");
