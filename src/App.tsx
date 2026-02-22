@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Home from "./pages/Home";
 import OfficerLogin from "./pages/OfficerLogin";
 import OfficerDashboard from "./pages/OfficerDashboard";
+import OfficerSlotsPage from "./pages/OfficerSlotsPage";
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/officer-login" element={<OfficerLogin />} />
 <Route path="/officer" element={<OfficerDashboard />} />
+<Route path="/officer/slots" element={<OfficerSlotsPage />} />
 
       </Routes>
     </BrowserRouter>

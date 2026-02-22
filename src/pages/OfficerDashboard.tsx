@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import OfficerEditApplication from "../components/officer/OfficerEditApplication";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { useNavigate } from "react-router-dom";
 
 interface Slot {
   _id: string;
@@ -27,7 +28,8 @@ appointmentSlot?: {
 const OfficerDashboard = () => {
 const [applications, setApplications] = useState<Application[]>([]);
   const [viewApp, setViewApp] = useState<any>(null);
-
+  const [scheduleApp, setScheduleApp] = useState<any>(null);
+  const [appointmentDate, setAppointmentDate] = useState("");
   const [slotModal, setSlotModal] = useState(false);
   const [slotDate, setSlotDate] = useState("");
   const [startTime, setStartTime] = useState("");
@@ -35,8 +37,14 @@ const [applications, setApplications] = useState<Application[]>([]);
   const [activeTab, setActiveTab] = useState("applications");
 const [rescheduleApp, setRescheduleApp] = useState<Application | null>(null);
 const [availableSlots, setAvailableSlots] = useState<Slot[]>([]);
+const [menuOpen, setMenuOpen] = useState(false);
+const navigate = useNavigate();
 const [citizens, setCitizens] = useState<any[]>([]);
 const [viewCitizen, setViewCitizen] = useState<any>(null);
+const [officer] = useState<any>(() => {
+  const stored = localStorage.getItem("officer");
+  return stored ? JSON.parse(stored) : null;
+});
 
   useEffect(() => {
     fetch("http://localhost:5000/api/officer/applications")
@@ -64,6 +72,27 @@ const deleteCitizen = async (id: string) => {
   setCitizens(prev => prev.filter(c => c._id !== id));
 };
 
+
+  const scheduleAppointment = async () => {
+    await fetch(
+      `http://localhost:5000/api/officer/schedule/${scheduleApp._id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ appointmentDate })
+      }
+    );
+
+    setApplications(prev =>
+      prev.map(a =>
+        a._id === scheduleApp._id
+          ? { ...a, appointmentDate }
+          : a
+      )
+    );
+
+    setScheduleApp(null);
+  };
 
   const saveSlot = async () => {
     const officer = JSON.parse(localStorage.getItem("officer") || "{}");
@@ -133,16 +162,40 @@ applicationId: rescheduleApp?._id
 
       
       {/* HEADER */}
-      <div style={{ ...header, display: "flex", justifyContent: "space-between" }}>
-        <div>
-          <h2>Officer Dashboard – Vivek (OFF-2025-90157)</h2>
-          <p>Marriage Registration Officer – Ward 4</p>
-        </div>
+<div style={header}>
+  <div style={{ display: "flex", justifyContent: "space-between" }}>
+    <div>
+      <h2>
+        Officer Dashboard – {officer?.name} ({officer?.officerId})
+      </h2>
 
-        <button style={slotBtn} onClick={() => setSlotModal(true)}>
-          Manage Slot Availability
-        </button>
-      </div>
+      <p>Marriage Registration Officer – {officer?.ward}</p>
+    </div>
+
+    {/* Hamburger */}
+    <button
+      style={hamburgerBtn}
+      onClick={() => setMenuOpen(!menuOpen)}
+    >
+      ☰
+    </button>
+  </div>
+
+  {/* Dropdown Menu */}
+  {menuOpen && (
+    <div style={dropdownMenu}>
+      <button
+        style={dropdownItem}
+onClick={() => {
+  navigate("/officer/slots");
+  setMenuOpen(false);
+}}
+      >
+        Manage Slot Availability
+      </button>
+    </div>
+  )}
+</div>
 
       {/* TABS */}
       <div style={tabBar}>
@@ -681,4 +734,33 @@ const th = {
 
 const td = {
   padding: "12px 10px"
+};
+
+
+const hamburgerBtn = {
+  background: "transparent",
+  border: "none",
+  fontSize: 22,
+  cursor: "pointer",
+  color: "black"
+};
+
+const dropdownMenu = {
+  marginTop: 10,
+  background: "#e19316",
+  borderRadius: 8,
+  padding: 10,
+  width: 220,
+  boxShadow: "0 4px 10px rgba(0,0,0,0.15)"
+};
+
+const dropdownItem = {
+  background: "none",
+  border: "none",
+  padding: 10,
+  width: "100%",
+  textAlign: "left" as const,
+  cursor: "pointer",
+  color:"black",
+  fontWeight: 600
 };
