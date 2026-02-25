@@ -7,7 +7,8 @@ import Home from "./pages/Home";
 import OfficerLogin from "./pages/OfficerLogin";
 import OfficerDashboard from "./pages/OfficerDashboard";
 import OfficerSlotsPage from "./pages/OfficerSlotsPage";
-
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import SuperAdminLogin from "./pages/SuperAdminLogin";
 export default function App() {
   return (
     <BrowserRouter>
@@ -19,7 +20,8 @@ export default function App() {
         <Route path="/officer-login" element={<OfficerLogin />} />
 <Route path="/officer" element={<OfficerDashboard />} />
 <Route path="/officer/slots" element={<OfficerSlotsPage />} />
-
+<Route path="/super-admin/login" element={<SuperAdminLogin />} />
+<Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
       </Routes>
     </BrowserRouter>
   );

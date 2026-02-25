@@ -408,6 +408,22 @@ const handleChange = (e: any) => {
       val = val.replace(/\D/g, "");
       if (val.length > 12) val = val.slice(0, 12);
     }
+    // PAN VALIDATION
+if (label.includes("PAN")) {
+  val = val.toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+  if (val.length > 10) {
+    val = val.slice(0, 10);
+  }
+}
+// MOBILE VALIDATION
+if (label.includes("Mobile")) {
+  val = val.replace(/\D/g, "");
+
+  if (val.length > 10) {
+    val = val.slice(0, 10);
+  }
+}
   }
 
   setFormData((prev: any) => ({
@@ -471,13 +487,26 @@ type === "file" ? (
       ) :
 
       label.includes("Age at Marriage") ? (
-        <input
-          type="number"
-          min="0"
-          style={input}
-          value={formData[key] || ""}
-          onChange={handleChange}
-        />
+<input
+  type="number"
+  min="0"
+  style={input}
+  value={formData[key] || ""}
+  onChange={handleChange}
+  onBlur={(e) => {
+    const age = parseInt(e.target.value);
+
+    if (!age) return;
+
+    if (prefix.includes("bride") && age < 18) {
+      alert("Bride age must be at least 18");
+    }
+
+    if (prefix.includes("groom") && age < 22) {
+      alert("Groom age must be at least 22");
+    }
+  }}
+/>
       ) :
 
       label.includes("Gender") ? (
@@ -521,6 +550,37 @@ type === "file" ? (
         </select>
       ) :
 
+      label.includes("Age Proof Type") ? (
+  <select
+    style={input}
+    value={formData[key] || ""}
+    onChange={handleChange}
+  >
+    <option value="">Select Age Proof Type</option>
+    <option>Birth Certificate</option>
+    <option>School Leaving Certificate</option>
+    <option>Passport</option>
+    <option>Aadhaar Card</option>
+    <option>PAN Card</option>
+  </select>
+) :
+
+label.includes("Residence Proof Type") ? (
+  <select
+    style={input}
+    value={formData[key] || ""}
+    onChange={handleChange}
+  >
+    <option value="">Select Residence Proof Type</option>
+    <option>Aadhaar Card</option>
+    <option>Voter ID</option>
+    <option>Passport</option>
+    <option>Electricity Bill</option>
+    <option>Ration Card</option>
+    <option>Driving License</option>
+  </select>
+) :
+
       label.includes("ID Proof Type") ? (
         <select
           style={input}
@@ -536,14 +596,22 @@ type === "file" ? (
         </select>
       ) :
 
-      label.includes("Religion") ? (
-        <input
-          type="text"
-          style={input}
-          value={formData[key] || ""}
-          onChange={handleChange}
-        />
-      ) :
+label.includes("Religion") ? (
+  <select
+    style={input}
+    value={formData[key] || ""}
+    onChange={handleChange}
+  >
+    <option value="">Select Religion</option>
+    <option>Hindu</option>
+    <option>Muslim</option>
+    <option>Christian</option>
+    <option>Sikh</option>
+    <option>Buddhist</option>
+    <option>Jain</option>
+    <option>Other</option>
+  </select>
+) :
 
       (
         <input

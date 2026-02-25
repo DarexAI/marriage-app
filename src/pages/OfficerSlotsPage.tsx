@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 interface Slot {
   _id: string;
   date: string;
@@ -16,18 +17,41 @@ const [date, setDate] = useState("");
 const [startTime, setStartTime] = useState("");
 const [endTime, setEndTime] = useState("");
 
-  const fetchSlots = () => {
-    fetch("http://localhost:5000/api/slots")
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setSlots(data.slots);
-      });
+const fetchSlots = async () => {
+  const officer = JSON.parse(localStorage.getItem("officer") || "{}");
+
+  if (!officer?.officerId) return;
+
+  const res = await fetch(
+    `http://localhost:5000/api/slots?officerId=${officer.officerId}`
+  );
+
+  const data = await res.json();
+
+  if (data.success) {
+    setSlots(data.slots);
+  }
+};
+
+ useEffect(() => {
+  const loadSlots = async () => {
+    const officer = JSON.parse(localStorage.getItem("officer") || "{}");
+
+    if (!officer?.officerId) return;
+
+    const res = await fetch(
+      `http://localhost:5000/api/slots?officerId=${officer.officerId}`
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      setSlots(data.slots);
+    }
   };
 
-  useEffect(() => {
-    fetchSlots();
-  }, []);
-
+  loadSlots();
+}, []);
   const deleteSlot = async (id: string) => {
     if (!window.confirm("Delete this slot?")) return;
 
@@ -77,6 +101,8 @@ const [endTime, setEndTime] = useState("");
   };
 
   return (
+    <>
+    <Navbar/>
     <div
   style={{
     padding: 20,
@@ -87,44 +113,44 @@ const [endTime, setEndTime] = useState("");
 >
       <h2>Slot Management</h2>
 
-      <table width="100%" style={{ borderCollapse: "collapse" }}>
+     <table style={tableStyle}>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Time</th>
-            <th>Status</th>
-            <th>CPAN</th>
-            <th>Action</th>
+            <th style={thStyle}>DateDate</th>
+            <th style={thStyle}>DateTime</th>
+            <th style={thStyle}>DateStatus</th>
+            <th style={thStyle}>DateCPAN</th>
+            <th style={thStyle}>DateAction</th>
           </tr>
         </thead>
 
         <tbody>
           {slots.map(slot => (
-            <tr key={slot._id}>
-              <td>{new Date(slot.date).toLocaleDateString()}</td>
+            <tr key={slot._id} style={trStyle}>
+              <td style={tdStyle}>{new Date(slot.date).toLocaleDateString()}</td>
 
-              <td>
+              <td style={tdStyle}>
                 {slot.startTime} - {slot.endTime}
               </td>
 
-              <td>
+              <td style={tdStyle}>
                 <span
                   style={{
                     padding: "4px 10px",
                     borderRadius: 6,
                     background:
-                      slot.status === "booked"
-                        ? "#fff3cd"
+                    slot.status === "booked"
+                    ? "#fff3cd"
                         : "#d4edda"
-                  }}
-                >
+                      }}
+                      >
                   {slot.status}
                 </span>
               </td>
 
-              <td>{slot.cpan || "-"}</td>
+              <td style={tdStyle}>{slot.cpan || "-"}</td>
 
-              <td>
+              <td style={tdStyle}>
                 {slot.status === "available" && (
                   <>
                     <button
@@ -137,7 +163,7 @@ const [endTime, setEndTime] = useState("");
                         borderRadius: 6,
                         marginRight: 5
                       }}
-                    >
+                      >
                       Update
                     </button>
 
@@ -196,7 +222,7 @@ const [endTime, setEndTime] = useState("");
         type="time"
         value={startTime}
         onChange={e => setStartTime(e.target.value)}
-      />
+        />
 
       <br /><br />
 
@@ -214,7 +240,7 @@ const [endTime, setEndTime] = useState("");
           const officer = JSON.parse(
             localStorage.getItem("officer") || "{}"
           );
-
+          
           await fetch("http://localhost:5000/api/slots", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -225,7 +251,7 @@ const [endTime, setEndTime] = useState("");
               endTime
             })
           });
-
+          
           setShowAddModal(false);
           window.location.reload();
         }}
@@ -245,6 +271,8 @@ const [endTime, setEndTime] = useState("");
 )}
       </div>
     </div>
+    <Footer/>
+        </>
   );
 };
 
@@ -256,33 +284,78 @@ const overlay = {
   left: 0,
   width: "100%",
   height: "100%",
-  background: "rgba(0,0,0,0.4)",
+  background: "rgba(0,0,0,0.45)",
   display: "flex",
   justifyContent: "center",
-  alignItems: "center"
+  alignItems: "center",
+  backdropFilter: "blur(3px)",   // modern blur effect
+  zIndex: 999
 };
 
 const modal = {
-  background: "#fff",
-  padding: 25,
-  borderRadius: 10,
-  width: 320
+  background: "#ffffff",
+  padding: "30px 28px",
+  borderRadius: 16,
+  width: 360,
+  boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
+  animation: "fadeIn 0.25s ease",
+  fontFamily: "Segoe UI, sans-serif"
 };
 
 const scheduleBtn = {
-  background: "#4caf50",
+  background: "linear-gradient(135deg,#45A98F,#2F7F6A)",
   color: "white",
   border: "none",
-  padding: "8px 14px",
-  borderRadius: 6,
-  cursor: "pointer"
+  padding: "10px 18px",
+  borderRadius: 8,
+  cursor: "pointer",
+  fontWeight: 600,
+  transition: "0.25s",
+  boxShadow: "0 4px 12px rgba(69,169,143,0.35)"
 };
 
 const closeBtn = {
-  background: "#aaa",
+  background: "#eef1f5",
+  color: "#333",
   border: "none",
-  padding: "8px 14px",
-  borderRadius: 6,
-  marginLeft: 10,
-  cursor: "pointer"
+  padding: "10px 18px",
+  borderRadius: 8,
+  marginLeft: 12,
+  cursor: "pointer",
+  fontWeight: 500,
+  transition: "0.25s"
+};
+
+const tableStyle = {
+  width: "100%",
+  borderCollapse: "separate" as const,
+  borderSpacing: "0 8px",
+};
+
+const thStyle = {
+  textAlign: "left" as const,
+  padding: "12px 14px",
+  fontWeight: 600,
+  color: "#1f2d2a",
+  background: "#f1f4f8",
+  borderBottom: "2px solid #e0e6ed",
+};
+
+const trStyle = {
+  background: "#ffffff",
+  boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+  borderRadius: 8,
+};
+
+const tdStyle = {
+  padding: "12px 14px",
+  borderTop: "1px solid #f0f0f0",
+};
+
+const statusBadge = {
+  padding: "4px 12px",
+  borderRadius: 20,
+  fontSize: 12,
+  fontWeight: 600,
+  letterSpacing: 0.3,
 };

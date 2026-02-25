@@ -73,11 +73,9 @@ if (appData.application?.appointmentSlot) {
         endTime: slot.endTime
       });
 
-      setAppStatus("verification_scheduled");
+      // ✅ DO NOT override status
     } else {
-      // Slot deleted
       setSelectedSlot(null);
-      setAppStatus("in_progress");
     }
   } catch {
     console.log("Slot fetch failed");
@@ -196,6 +194,7 @@ background:
 {appStatus === "not_applied" && " Not Applied"}
 {appStatus === "in_progress" && " Application In Progress"}
 {appStatus === "verification_scheduled" && " Verification Scheduled"}
+{appStatus === "physical_verification_completed" && " Physical Verification Completed"}
 {appStatus === "approved" && " Approved"}
 
       </b>
@@ -367,6 +366,8 @@ cursor: selectedSlot ? "not-allowed" : "pointer",
           <b>Status:</b>{" "}
 {appStatus === "approved"
   ? "Approved"
+  : appStatus === "physical_verification_completed"
+  ? "Physical Verification Completed"
   : appStatus === "verification_scheduled"
   ? "Verification Scheduled"
   : "Application In Progress"}

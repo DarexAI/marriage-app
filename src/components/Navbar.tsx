@@ -46,9 +46,9 @@ const Navbar: React.FC = () => {
         }}
       >
         <img
-          src="https://via.placeholder.com/40"
+          src="/logo.png"
           alt="logo"
-          style={{ borderRadius: 8 }}
+          style={{ borderRadius: 8, height:"80px" }}
         />
 
         <div>

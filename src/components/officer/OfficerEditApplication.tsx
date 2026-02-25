@@ -85,42 +85,69 @@ const OfficerEditApplication = ({ application }: Props) => {
       </div>
 
       {/* ========= DOCUMENTS ========= */}
-      <h3 style={{ marginTop: 40 }}>
-        Uploaded Documents
-      </h3>
+<h3 style={{ marginTop: 40 }}>Uploaded Documents</h3>
 
-      <div style={docGrid}>
-        {Object.entries(documents).map(
-          ([key, url]: any) => (
-            <div key={key} style={docCard}>
-              <p style={{ fontWeight: 600 }}>
-                {key.replace(/_/g, " ")}
-              </p>
+<div style={docGrid}>
+  {Object.entries(documents).map(([key, url]: any) => {
+    const preview =
+      newDocs[key]
+        ? URL.createObjectURL(newDocs[key])
+        : url;
 
-              <div style={{ display: "flex", gap: 10 }}>
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={viewBtn}
-                >
-                  View
-                </a>
+    const isImage =
+      preview &&
+      (preview.includes(".jpg") ||
+        preview.includes(".png") ||
+        preview.includes(".jpeg") ||
+        preview.includes(".webp"));
 
-                <input
-                  type="file"
-                  onChange={(e: any) =>
-                    handleDocChange(
-                      key,
-                      e.target.files[0]
-                    )
-                  }
-                />
-              </div>
-            </div>
-          )
+    return (
+      <div key={key} style={docCard}>
+        <p style={{ fontWeight: 600 }}>
+          {key.replace(/_/g, " ")}
+        </p>
+
+        {/* IMAGE PREVIEW */}
+        {isImage ? (
+          <img
+            src={preview}
+            alt="doc preview"
+            style={{
+              width: 120,
+              height: 90,
+              objectFit: "cover",
+              borderRadius: 8,
+              marginBottom: 10,
+              border: "1px solid #ddd"
+            }}
+          />
+        ) : (
+          <p style={{ fontSize: 12 }}>
+            Preview not available
+          </p>
         )}
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <a
+            href={preview}
+            target="_blank"
+            rel="noreferrer"
+            style={viewBtn}
+          >
+            View
+          </a>
+
+          <input
+            type="file"
+            onChange={(e: any) =>
+              handleDocChange(key, e.target.files[0])
+            }
+          />
+        </div>
       </div>
+    );
+  })}
+</div>
 
       <button style={saveBtn} onClick={updateApplication}>
         Update Application

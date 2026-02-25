@@ -77,18 +77,6 @@ const Login: React.FC = () => {
             Citizen
           </button>
 
-          <button
-            onClick={() => setRole("admin")}
-            style={{
-              flex: 1,
-              padding: 10,
-              border: "none",
-              background: role === "admin" ? "#3b6edc" : "#eee",
-              color: role === "admin" ? "white" : "black",
-            }}
-            >
-            Super Admin
-          </button>
         </div>
 
         <label>Email Address</label>
@@ -137,6 +125,7 @@ const Login: React.FC = () => {
             border: "none",
             padding: 10,
             borderRadius: 6,
+            backgroundColor:"#64a1e2"
           }}
           >
           Register as Citizen
@@ -155,6 +144,7 @@ const inputStyle: React.CSSProperties = {
   border: "1px solid #ccc",
   marginBottom: 15,
   background: "#f5f6f8",
+  color:"black"
 };
 
 export default Login;

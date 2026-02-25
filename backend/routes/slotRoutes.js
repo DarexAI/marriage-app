@@ -231,11 +231,20 @@ router.put("/slots/reschedule", async (req, res) => {
 
 
 /* ===============================
-   GET ALL SLOTS (ADMIN VIEW)
+   GET SLOTS (FILTERED OR ALL)
 =============================== */
 router.get("/slots", async (req, res) => {
   try {
-    const slots = await Slot.find()
+    const { officerId } = req.query;
+
+    let filter = {};
+
+    // If officerId is passed → return only that officer's slots
+    if (officerId) {
+      filter.officerId = officerId;
+    }
+
+    const slots = await Slot.find(filter)
       .sort({ date: 1, startTime: 1 });
 
     res.json({
@@ -251,7 +260,6 @@ router.get("/slots", async (req, res) => {
     });
   }
 });
-
 
 /* ===============================
    DELETE SLOT

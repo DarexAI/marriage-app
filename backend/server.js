@@ -11,7 +11,8 @@ const slotRoutes = require("./routes/slotRoutes"); // 👈 ADD THIS
 const citizenRoutes = require("./routes/citizenRoutes");
 
 const app = express();
-
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 // Connect MongoDB
 connectDB();
 
@@ -26,6 +27,11 @@ app.use("/api/officer-auth", officerAuthRoutes);
 app.use("/api/officer", officerDashboardRoutes);
 app.use("/api", slotRoutes);
 app.use("/api", citizenRoutes);
+app.use("/api", require("./routes/physicalVerification"));
+app.use("/api", require("./routes/upload"));
+app.use("/api/super-admin", require("./routes/superAdminAuth"));
+app.use("/api/admin", require("./routes/superAdmin"));
+
 
 app.get("/", (req, res) => {
   res.send("API Running Successfully");

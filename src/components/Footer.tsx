@@ -39,7 +39,7 @@ const Footer: React.FC = () => {
         {/* RIGHT */}
         <div>
           <h4>Office Hours</h4>
-          <p style={{ margin: "5px 0" }}>Mon - Sat</p>
+          <p style={{ margin: "5px 0" }}>Mon - Fri</p>
           <p style={{ margin: "5px 0" }}>10:00 AM - 5:00 PM</p>
         </div>
       </div>
