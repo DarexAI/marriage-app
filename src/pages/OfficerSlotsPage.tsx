@@ -86,7 +86,7 @@ const fetchSlots = async () => {
 
     const officer = JSON.parse(localStorage.getItem("officer") || "{}");
 
-    await fetch("http://localhost:5000/api/slots", {
+    await fetch("/api/slots", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -241,7 +241,7 @@ const fetchSlots = async () => {
             localStorage.getItem("officer") || "{}"
           );
           
-          await fetch("http://localhost:5000/api/slots", {
+          await fetch("/api/slots", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

@@ -34,7 +34,7 @@ form.append("userId", applicant.email);
     form.append("data", JSON.stringify(textData));
 
     const res = await fetch(
-      "http://localhost:5000/api/applications",
+      "/api/applications",
       {
         method: "POST",
         body: form,

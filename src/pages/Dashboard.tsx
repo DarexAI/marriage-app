@@ -95,7 +95,7 @@ if (appData.application?.appointmentSlot) {
 const bookSlot = async (slotId: string) => {
   try {
     const res = await fetch(
-      "http://localhost:5000/api/slots/book",
+      "/api/slots/book",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -218,7 +218,7 @@ background:
     setShowSlots(!showSlots);
 
     if (!showSlots) {
-      const res = await fetch("http://localhost:5000/api/slots/available");
+      const res = await fetch("/api/slots/available");
       const data = await res.json();
       if (data.success) setSlots(data.slots);
     }

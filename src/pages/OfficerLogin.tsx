@@ -11,7 +11,7 @@ const OfficerLogin = () => {
 
   const login = async () => {
     const res = await fetch(
-      "http://localhost:5000/api/officer-auth/login",
+      "/api/officer-auth/login",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -62,7 +62,7 @@ const [officer] = useState<any>(() => {
 });
 
 useEffect(() => {
-  fetch("http://localhost:5000/api/slots")
+  fetch("/api/slots")
     .then(res => res.json())
     .then(data => {
       if (data.success) setSlotOptions(data.slots);
@@ -137,14 +137,14 @@ const printReport = () => {
 };
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/officer/applications")
+    fetch("/api/officer/applications")
       .then(res => res.json())
       .then(data => setApplications(data || []));
   }, []);
 
   useEffect(() => {
   if (activeTab === "citizens") {
-    fetch("http://localhost:5000/api/citizens")
+    fetch("/api/citizens")
       .then(res => res.json())
       .then(data => {
         if (data.success) setCitizens(data.users);
@@ -187,7 +187,7 @@ const deleteCitizen = async (id: string) => {
   const saveSlot = async () => {
     const officer = JSON.parse(localStorage.getItem("officer") || "{}");
 
-    await fetch("http://localhost:5000/api/slots", {
+    await fetch("/api/slots", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -206,7 +206,7 @@ const openReschedule = async (app: Application) => {
   setRescheduleApp(app);
 
   const res = await fetch(
-    "http://localhost:5000/api/slots/available"
+    "/api/slots/available"
   );
   const data = await res.json();
 
@@ -216,7 +216,7 @@ const openReschedule = async (app: Application) => {
 };
 const confirmReschedule = async (newSlotId: string) => {
   await fetch(
-    "http://localhost:5000/api/slots/reschedule",
+    "/api/slots/reschedule",
     {
       method:"PUT",
       headers:{ "Content-Type":"application/json" },
@@ -256,7 +256,7 @@ const uploadToCloudinary = async (image: string) => {
   if (!image) return "";
 
   const res = await fetch(
-    "http://localhost:5000/api/upload-photo",
+    "/api/upload-photo",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -698,7 +698,7 @@ onClick={async () => {
   const w3Url = await uploadToCloudinary(w3Photo);
 
   await fetch(
-    "http://localhost:5000/api/physical-verify",
+    "/api/physical-verify",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

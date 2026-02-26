@@ -12,7 +12,7 @@ const SuperAdminLogin = () => {
   const login = async () => {
     try {
       const res = await fetch(
-        "http://localhost:5000/api/super-admin/login",
+        "/api/super-admin/login",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

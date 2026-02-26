@@ -25,7 +25,7 @@ const [officerForm, setOfficerForm] = useState({
   const token = localStorage.getItem("superAdminToken");
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/admin/overview", {
+    fetch("/api/admin/overview", {
       headers: { Authorization: token || "" }
     })
       .then(res => res.json())
@@ -33,7 +33,7 @@ const [officerForm, setOfficerForm] = useState({
   }, []);
 
   const loadOfficers = async () => {
-    const res = await fetch("http://localhost:5000/api/admin/officers", {
+    const res = await fetch("/api/admin/officers", {
       headers: { Authorization: token || "" }
     });
     const data = await res.json();
@@ -41,7 +41,7 @@ const [officerForm, setOfficerForm] = useState({
   };
 
   const loadCitizens = async () => {
-    const res = await fetch("http://localhost:5000/api/admin/citizens", {
+    const res = await fetch("/api/admin/citizens", {
       headers: { Authorization: token || "" }
     });
     const data = await res.json();
@@ -50,7 +50,7 @@ const [officerForm, setOfficerForm] = useState({
 
 const loadApplications = async () => {
   try {
-    const res = await fetch("http://localhost:5000/api/admin/applications", {
+    const res = await fetch("/api/admin/applications", {
       headers: { Authorization: token || "" }
     });
 
@@ -69,7 +69,7 @@ const loadApplications = async () => {
 };
 
 const addOfficer = async () => {
-  await fetch("http://localhost:5000/api/admin/officers", {
+  await fetch("/api/admin/officers", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -448,7 +448,7 @@ const handleReview = async (verificationId: string) => {
   onClick={async () => {
     try {
       const res = await fetch(
-        "http://localhost:5000/api/admin/blockchain/register",
+        "/api/admin/blockchain/register",
         {
           method: "POST",
           headers: {
