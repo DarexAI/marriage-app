@@ -355,12 +355,40 @@ const handleReview = async (verificationId: string) => {
 
             {/* Status */}
             <td style={td}>
-              <span style={statusBadge}>
-                ISSUED
-              </span>
+             <span
+  style={{
+    ...statusBadge,
+    background:
+      app.certificate?.registeredOnChain
+        ? "#d4edda"
+        : "#fff3cd",
+    color:
+      app.certificate?.registeredOnChain
+        ? "#155724"
+        : "#856404"
+  }}
+>
+  {app.certificate?.registeredOnChain
+    ? "ISSUED"
+    : "PRE ISSUED"}
+</span>
               <div style={certText}>
-                CERT-{app.cpan}
-              </div>
+  CERT-{app.cpan}
+</div>
+
+{app.certificate?.registeredOnChain && (
+  <div style={{ fontSize: 12, marginTop: 4 }}>
+    <div>
+      <b>Blockchain:</b>{" "}
+      {app.certificate.blockchainStatus}
+    </div>
+
+    <div style={{ wordBreak: "break-all" }}>
+      <b>Hash:</b>{" "}
+      {app.certificate.certificateHash}
+    </div>
+  </div>
+)}
             </td>
 
             {/* Officer */}
@@ -389,7 +417,7 @@ const handleReview = async (verificationId: string) => {
   onClick={async () => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/admin/generate-receipt/${app._id}`,
+        `http://localhost:5000/api/admin/generate-certificate/${app._id}`,
         {
           headers: {
             Authorization: token || ""
@@ -416,13 +444,42 @@ const handleReview = async (verificationId: string) => {
 </button>
 
   <button
-    style={blockchainBtn}
-    onClick={() => {
-      alert("Blockchain record opened (Dummy)");
-    }}
-  >
-    Blockchain
-  </button>
+  style={blockchainBtn}
+  onClick={async () => {
+    try {
+      const res = await fetch(
+        "http://localhost:5000/api/admin/blockchain/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token || ""
+          },
+          body: JSON.stringify({
+            cpan: app.cpan
+          })
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Blockchain registration successful");
+
+        // reload applications to refresh UI
+        loadApplications();
+      } else {
+        alert(data.message || "Blockchain failed");
+      }
+
+    } catch (err) {
+      console.log(err);
+      alert("Blockchain error");
+    }
+  }}
+>
+  Blockchain
+</button>
 <button
   style={{
     background: "#20c997",

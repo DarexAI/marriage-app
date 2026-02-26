@@ -154,9 +154,21 @@ router.get("/applications", protect, async (req, res) => {
       })
       .sort({ verifiedAt: -1 });
 
+    // attach certificate info
+    const appsWithCert = await Promise.all(
+      apps.map(async (app) => {
+        const cert = await Certificate.findOne({ cpan: app.cpan });
+
+        return {
+          ...app.toObject(),
+          certificate: cert || null
+        };
+      })
+    );
+
     res.json({
       success: true,
-      apps
+      apps: appsWithCert
     });
 
   } catch (err) {
