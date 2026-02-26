@@ -12,7 +12,7 @@ const SuperAdminLogin = () => {
   const login = async () => {
     try {
       const res = await fetch(
-        "/api/super-admin/login",
+        `${import.meta.env.VITE_API_URL}/super-admin/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

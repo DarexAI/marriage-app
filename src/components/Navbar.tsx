@@ -1,19 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { useLocation } from "react-router-dom";
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const [loggedIn, setLoggedIn] = useState(false);
+const location = useLocation();
 
   // CHECK LOGIN STATUS
-  useEffect(() => {
-    const applicant = localStorage.getItem("applicant");
-    const officer = localStorage.getItem("officer");
+ useEffect(() => {
+  const applicant = localStorage.getItem("applicant");
+  const officer = localStorage.getItem("officer");
 
-    if (applicant || officer) {
-      setLoggedIn(true);
-    }
-  }, []);
+  setLoggedIn(!!(applicant || officer));
+}, [location]);
 
   // LOGOUT FUNCTION
   const handleLogout = () => {

@@ -25,6 +25,13 @@ appointmentSlot?: {
   createdAt?: string;
 }
 
+const DetailItem = ({ label, value }: any) => (
+  <div style={detailCard}>
+    <label style={detailLabel}>{label}</label>
+    <div style={detailValue}>{value || "-"}</div>
+  </div>
+);
+
 const OfficerDashboard = () => {
 const [applications, setApplications] = useState<Application[]>([]);
   const [viewApp, setViewApp] = useState<any>(null);
@@ -62,7 +69,7 @@ const [officer] = useState<any>(() => {
 });
 
 useEffect(() => {
-  fetch("/api/slots")
+  fetch(`${import.meta.env.VITE_API_URL}/slots`)
     .then(res => res.json())
     .then(data => {
       if (data.success) setSlotOptions(data.slots);
@@ -137,14 +144,14 @@ const printReport = () => {
 };
 
   useEffect(() => {
-    fetch("/api/officer/applications")
+    fetch(`${import.meta.env.VITE_API_URL}/officer/applications`)
       .then(res => res.json())
       .then(data => setApplications(data || []));
   }, []);
 
   useEffect(() => {
   if (activeTab === "citizens") {
-    fetch("/api/citizens")
+    fetch(`${import.meta.env.VITE_API_URL}/citizens`)
       .then(res => res.json())
       .then(data => {
         if (data.success) setCitizens(data.users);
@@ -155,7 +162,7 @@ const printReport = () => {
 const deleteCitizen = async (id: string) => {
   if (!window.confirm("Delete this citizen?")) return;
 
-  await fetch(`http://localhost:5000/api/citizens/${id}`, {
+  await fetch(`{import.meta.env.VITE_API_URL}/citizens/${id}`, {
     method: "DELETE"
   });
 
@@ -165,7 +172,7 @@ const deleteCitizen = async (id: string) => {
 
   const scheduleAppointment = async () => {
     await fetch(
-      `http://localhost:5000/api/officer/schedule/${scheduleApp._id}`,
+      `${import.meta.env.VITE_API_URL}/officer/schedule/${scheduleApp._id}`,
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -187,7 +194,7 @@ const deleteCitizen = async (id: string) => {
   const saveSlot = async () => {
     const officer = JSON.parse(localStorage.getItem("officer") || "{}");
 
-    await fetch("/api/slots", {
+    await fetch(`${import.meta.env.VITE_API_URL}/slots`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -206,7 +213,7 @@ const openReschedule = async (app: Application) => {
   setRescheduleApp(app);
 
   const res = await fetch(
-    "/api/slots/available"
+    `${import.meta.env.VITE_API_URL}/slots/available`
   );
   const data = await res.json();
 
@@ -216,7 +223,7 @@ const openReschedule = async (app: Application) => {
 };
 const confirmReschedule = async (newSlotId: string) => {
   await fetch(
-    "/api/slots/reschedule",
+    `${import.meta.env.VITE_API_URL}/slots/reschedule`,
     {
       method:"PUT",
       headers:{ "Content-Type":"application/json" },
@@ -256,7 +263,7 @@ const uploadToCloudinary = async (image: string) => {
   if (!image) return "";
 
   const res = await fetch(
-    "/api/upload-photo",
+    `${import.meta.env.VITE_API_URL}/upload-photo`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -267,6 +274,8 @@ const uploadToCloudinary = async (image: string) => {
   const data = await res.json();
   return data.url;
 };
+
+
 
 const openCamera = async (setter: any) => {
   const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -438,28 +447,108 @@ onClick={() => {
             </td>
 
             {/* Action */}
-            <td style={td}>
-              <button
-                style={viewBtn}
-                onClick={async () => {
-                  const email = app.formData?.userId;
-                  
-                  const res = await fetch(
-                    `http://localhost:5000/api/applications/by-email/${email}`
-                  );
-                  
-                  const data = await res.json();
-                  
-                  if (data.success) {
-                    setViewApp(data.application);
-                  } else {
-                    alert("Application not found");
-                  }
-                }}
-                >
-                View
-              </button>
-            </td>
+           <td style={td}>
+  <button
+    style={viewBtn}
+    onClick={async () => {
+      const email = app.formData?.userId;
+
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/applications/by-email/${email}`
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        setViewApp(data.application);
+      } else {
+        alert("Application not found");
+      }
+    }}
+  >
+    View
+  </button>
+
+  {/* SHOW ONLY AFTER PHYSICAL VERIFICATION */}
+  {app.status === "physical_verification_completed" && (
+    <>
+      {/* RECEIPT */}
+      <button
+        style={{ ...certificateBtn, marginLeft: 6 }}
+        onClick={async () => {
+          try {
+            const res = await fetch(
+              `${import.meta.env.VITE_API_URL}/officer/generate-receipt/${app.cpan}`
+            );
+
+            const data = await res.json();
+
+            if (data.success) {
+              window.open(data.url, "_blank");
+            } else {
+              alert("Failed to generate receipt");
+            }
+          } catch (err) {
+            console.log(err);
+            alert("Receipt error");
+          }
+        }}
+      >
+        Receipt
+      </button>
+
+      {/* GOSHVARA */}
+      <button
+        style={{ ...certificateBtn, marginLeft: 6 }}
+        onClick={async () => {
+          try {
+            const res = await fetch(
+              `${import.meta.env.VITE_API_URL}/officer/generate-goshvara/${app.cpan}`
+            );
+
+            const data = await res.json();
+
+            if (data.success) {
+              window.open(data.url, "_blank");
+            } else {
+              alert("Failed to generate Goshvara");
+            }
+          } catch (err) {
+            console.log(err);
+            alert("Goshvara error");
+          }
+        }}
+      >
+        Goshvara
+      </button>
+
+      {/* CERTIFICATE */}
+      <button
+        style={{ ...certificateBtn, marginLeft: 6 }}
+        onClick={async () => {
+          try {
+            const res = await fetch(
+              `${import.meta.env.VITE_API_URL}/officer/generate-certificate/${app.cpan}`
+            );
+
+            const data = await res.json();
+
+            if (data.success) {
+              window.open(data.url, "_blank");
+            } else {
+              alert("Failed to generate certificate");
+            }
+          } catch (err) {
+            console.log(err);
+            alert("Certificate error");
+          }
+        }}
+      >
+        Certificate
+      </button>
+    </>
+  )}
+</td>
           </tr>
         ))}
       </tbody>
@@ -698,7 +787,7 @@ onClick={async () => {
   const w3Url = await uploadToCloudinary(w3Photo);
 
   await fetch(
-    "/api/physical-verify",
+    `${import.meta.env.VITE_API_URL}/physical-verify`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -898,16 +987,23 @@ onClick={async () => {
 {viewCitizen && (
   <div style={overlay}>
     <div style={modal}>
-      <h3>Citizen Details</h3>
+      <h3 style={{ marginBottom: 20 }}>Citizen Details</h3>
 
-      <pre>
-        {JSON.stringify(viewCitizen, null, 2)}
-      </pre>
+      <div style={detailsGrid}>
+        <DetailItem label="Full Name" value={viewCitizen.name} />
+        <DetailItem label="Email" value={viewCitizen.email} />
+        <DetailItem label="Mobile Number" value={viewCitizen.phone} />
+        <DetailItem
+          label="Created At"
+          value={new Date(viewCitizen.createdAt).toLocaleString()}
+        />
+        <DetailItem label="User ID" value={viewCitizen._id} />
+      </div>
 
       <button
         style={closeBtn}
         onClick={() => setViewCitizen(null)}
-        >
+      >
         Close
       </button>
     </div>
@@ -1110,14 +1206,7 @@ const tabBtn = {
   color: "black"
 };
 
-const slotBtn = {
-  background: "#1976d2",
-  color: "white",
-  border: "none",
-  padding: "10px 16px",
-  borderRadius: 8,
-  cursor: "pointer"
-};
+
 
 const th = {
   padding: "12px 10px",
@@ -1171,4 +1260,41 @@ const statCard = {
   borderRadius: 12,
   textAlign: "center" as const,
   boxShadow: "0 4px 10px rgba(0,0,0,0.08)"
+};
+
+const detailsGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+  gap: 15,
+  marginBottom: 20
+};
+
+const detailCard = {
+  background: "#f8f9fb",
+  padding: 15,
+  borderRadius: 10,
+  border: "1px solid #e0e0e0"
+};
+
+const detailLabel = {
+  fontSize: 13,
+  fontWeight: 600,
+  color: "#666",
+  marginBottom: 6,
+  display: "block"
+};
+
+const detailValue = {
+  fontSize: 15,
+  fontWeight: 500,
+  color: "#111"
+};
+
+const certificateBtn = {
+  background: "#3b6edc",
+  color: "#fff",
+  border: "none",
+  padding: "6px 12px",
+  borderRadius: 6,
+  cursor: "pointer"
 };

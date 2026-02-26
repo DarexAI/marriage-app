@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { useNavigate } from "react-router-dom";
 interface Slot {
   _id: string;
   date: string;
@@ -16,14 +17,14 @@ const [showAddModal, setShowAddModal] = useState(false);
 const [date, setDate] = useState("");
 const [startTime, setStartTime] = useState("");
 const [endTime, setEndTime] = useState("");
-
+const navigate = useNavigate();
 const fetchSlots = async () => {
   const officer = JSON.parse(localStorage.getItem("officer") || "{}");
 
   if (!officer?.officerId) return;
 
   const res = await fetch(
-    `http://localhost:5000/api/slots?officerId=${officer.officerId}`
+    `${import.meta.env.VITE_API_URL}/slots?officerId=${officer.officerId}`
   );
 
   const data = await res.json();
@@ -40,7 +41,7 @@ const fetchSlots = async () => {
     if (!officer?.officerId) return;
 
     const res = await fetch(
-      `http://localhost:5000/api/slots?officerId=${officer.officerId}`
+      `${import.meta.env.VITE_API_URL}/slots?officerId=${officer.officerId}`
     );
 
     const data = await res.json();
@@ -55,7 +56,7 @@ const fetchSlots = async () => {
   const deleteSlot = async (id: string) => {
     if (!window.confirm("Delete this slot?")) return;
 
-    await fetch(`http://localhost:5000/api/slots/${id}`, {
+    await fetch(`${import.meta.env.VITE_API_URL}/slots/${id}`, {
       method: "DELETE"
     });
 
@@ -68,7 +69,7 @@ const fetchSlots = async () => {
 
     if (!startTime || !endTime) return;
 
-    await fetch(`http://localhost:5000/api/slots/${slot._id}`, {
+    await fetch(`${import.meta.env.VITE_API_URL}/slots/${slot._id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ startTime, endTime })
@@ -86,7 +87,7 @@ const fetchSlots = async () => {
 
     const officer = JSON.parse(localStorage.getItem("officer") || "{}");
 
-    await fetch("/api/slots", {
+    await fetch(`${import.meta.env.VITE_API_URL}/slots`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -111,6 +112,12 @@ const fetchSlots = async () => {
     minHeight: "100vh"
   }}
 >
+  <button
+  onClick={() => navigate("/officer")}
+  style={backBtn}
+>
+  ← Back to Dashboard
+</button>
       <h2>Slot Management</h2>
 
      <table style={tableStyle}>
@@ -203,69 +210,72 @@ const fetchSlots = async () => {
 </button>
 {showAddModal && (
   <div style={overlay}>
-    <div style={modal}>
-      <h3>Add New Slot</h3>
+    <div style={modalNew}>
+      <h2 style={{ marginBottom: 20 }}>Add Appointment Slot</h2>
 
-      {/* Calendar popup */}
-      <label>Date</label>
-      <input
-        type="date"
-        value={date}
-        onChange={e => setDate(e.target.value)}
-      />
-
-      <br /><br />
-
-      {/* Time popup */}
-      <label>Start Time</label>
-      <input
-        type="time"
-        value={startTime}
-        onChange={e => setStartTime(e.target.value)}
+      <div style={field}>
+        <label>Date</label>
+        <input
+          type="date"
+          value={date}
+          onChange={e => setDate(e.target.value)}
+          style={inputStyle}
         />
+      </div>
 
-      <br /><br />
+      <div style={field}>
+        <label>Start Time</label>
+        <input
+          type="time"
+          value={startTime}
+          onChange={e => setStartTime(e.target.value)}
+          style={inputStyle}
+        />
+      </div>
 
-      <label>End Time</label>
-      <input
-        type="time"
-        value={endTime}
-        onChange={e => setEndTime(e.target.value)}
-      />
+      <div style={field}>
+        <label>End Time</label>
+        <input
+          type="time"
+          value={endTime}
+          onChange={e => setEndTime(e.target.value)}
+          style={inputStyle}
+        />
+      </div>
 
-      <br /><br />
+      <div style={{ marginTop: 25 }}>
+        <button
+          onClick={async () => {
+            const officer = JSON.parse(
+              localStorage.getItem("officer") || "{}"
+            );
 
-      <button
-        onClick={async () => {
-          const officer = JSON.parse(
-            localStorage.getItem("officer") || "{}"
-          );
-          
-          await fetch("/api/slots", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              officerId: officer.officerId,
-              date,
-              startTime,
-              endTime
-            })
-          });
-          
-          setShowAddModal(false);
-          window.location.reload();
-        }}
-        style={scheduleBtn}
-      >
-        Save Slot
-      </button>
+            await fetch(`${import.meta.env.VITE_API_URL}/slots`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                officerId: officer.officerId,
+                date,
+                startTime,
+                endTime
+              })
+            });
 
-      <button
-        onClick={() => setShowAddModal(false)}
-        style={closeBtn}
-      >
-        Cancel
-      </button>
+            setShowAddModal(false);
+            fetchSlots();
+          }}
+          style={saveBtn}
+        >
+          Save Slot
+        </button>
+
+        <button
+          onClick={() => setShowAddModal(false)}
+          style={cancelBtn}
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   </div>
 )}
@@ -358,4 +368,57 @@ const statusBadge = {
   fontSize: 12,
   fontWeight: 600,
   letterSpacing: 0.3,
+};
+
+const backBtn = {
+  background: "transparent",
+  border: "1px solid #45A98F",
+  color: "#45A98F",
+  padding: "8px 16px",
+  borderRadius: 8,
+  cursor: "pointer",
+  marginBottom: 15,
+  fontWeight: 600
+};
+
+const modalNew = {
+  background: "#fff",
+  padding: 30,
+  borderRadius: 16,
+  width: 380,
+  boxShadow: "0 15px 40px rgba(0,0,0,0.15)",
+  fontFamily: "Segoe UI"
+};
+
+const field = {
+  marginBottom: 16,
+  display: "flex",
+  flexDirection: "column" as const
+};
+
+const inputStyle = {
+  padding: "10px 12px",
+  borderRadius: 8,
+  border: "1px solid #ddd",
+  marginTop: 5,
+  fontSize: 14
+};
+
+const saveBtn = {
+  background: "#45A98F",
+  color: "white",
+  border: "none",
+  padding: "10px 20px",
+  borderRadius: 8,
+  cursor: "pointer",
+  fontWeight: 600,
+  marginRight: 10
+};
+
+const cancelBtn = {
+  background: "#f1f1f1",
+  border: "none",
+  padding: "10px 20px",
+  borderRadius: 8,
+  cursor: "pointer"
 };

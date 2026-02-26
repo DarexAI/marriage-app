@@ -40,7 +40,7 @@ const OfficerEditApplication = ({ application }: Props) => {
     });
 
     await fetch(
-      `/api/officer/update-application/${application._id}`,
+      `${import.meta.env.VITE_API_URL}/officer/update-application/${application._id}`,
       {
         method: "PUT",
         body: form,

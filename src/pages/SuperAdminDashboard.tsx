@@ -25,7 +25,7 @@ const [officerForm, setOfficerForm] = useState({
   const token = localStorage.getItem("superAdminToken");
 
   useEffect(() => {
-    fetch("/api/admin/overview", {
+    fetch(`${import.meta.env.VITE_API_URL}/admin/overview`, {
       headers: { Authorization: token || "" }
     })
       .then(res => res.json())
@@ -33,7 +33,7 @@ const [officerForm, setOfficerForm] = useState({
   }, []);
 
   const loadOfficers = async () => {
-    const res = await fetch("/api/admin/officers", {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/officers`, {
       headers: { Authorization: token || "" }
     });
     const data = await res.json();
@@ -41,7 +41,7 @@ const [officerForm, setOfficerForm] = useState({
   };
 
   const loadCitizens = async () => {
-    const res = await fetch("/api/admin/citizens", {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/citizens`, {
       headers: { Authorization: token || "" }
     });
     const data = await res.json();
@@ -50,7 +50,7 @@ const [officerForm, setOfficerForm] = useState({
 
 const loadApplications = async () => {
   try {
-    const res = await fetch("/api/admin/applications", {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/applications`, {
       headers: { Authorization: token || "" }
     });
 
@@ -69,7 +69,7 @@ const loadApplications = async () => {
 };
 
 const addOfficer = async () => {
-  await fetch("/api/admin/officers", {
+  await fetch(`${import.meta.env.VITE_API_URL}/admin/officers`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -94,7 +94,7 @@ const addOfficer = async () => {
 
 const updateOfficer = async () => {
   await fetch(
-    `http://localhost:5000/api/admin/officers/${editOfficer._id}`,
+    `${import.meta.env.VITE_API_URL}/admin/officers/${editOfficer._id}`,
     {
       method: "PUT",
       headers: {
@@ -111,7 +111,7 @@ const updateOfficer = async () => {
 
 const deleteOfficer = async (id) => {
   await fetch(
-    `http://localhost:5000/api/admin/officers/${id}`,
+    `${import.meta.env.VITE_API_URL}/admin/officers/${id}`,
     {
       method: "DELETE",
       headers: { Authorization: token || "" }
@@ -122,7 +122,7 @@ const deleteOfficer = async (id) => {
 
 const deleteCitizen = async (id) => {
   await fetch(
-    `http://localhost:5000/api/admin/citizens/${id}`,
+    `${import.meta.env.VITE_API_URL}/admin/citizens/${id}`,
     {
       method: "DELETE",
       headers: { Authorization: token || "" }
@@ -134,7 +134,7 @@ const deleteCitizen = async (id) => {
 const handleReview = async (verificationId: string) => {
   try {
     const res = await fetch(
-      `http://localhost:5000/api/admin/applications/${verificationId}`,
+      `${import.meta.env.VITE_API_URL}/admin/applications/${verificationId}`,
       {
         headers: { Authorization: token || "" }
       }
@@ -405,6 +405,7 @@ const handleReview = async (verificationId: string) => {
 
             {/* Actions */}
             <td style={td}>
+              
 <button
   style={reviewBtn}
  onClick={() => handleReview(app._id)}
@@ -417,7 +418,7 @@ const handleReview = async (verificationId: string) => {
   onClick={async () => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/admin/generate-certificate/${app._id}`,
+        `${import.meta.env.VITE_API_URL}/admin/generate-certificate/${app._id}`,
         {
           headers: {
             Authorization: token || ""
@@ -443,12 +444,19 @@ const handleReview = async (verificationId: string) => {
   Generate
 </button>
 
-  <button
-  style={blockchainBtn}
+<button
+  disabled={app.certificate?.registeredOnChain}
+  style={{
+    ...blockchainBtn,
+    opacity: app.certificate?.registeredOnChain ? 0.5 : 1,
+    cursor: app.certificate?.registeredOnChain ? "not-allowed" : "pointer"
+  }}
   onClick={async () => {
+    if (app.certificate?.registeredOnChain) return;
+
     try {
       const res = await fetch(
-        "/api/admin/blockchain/register",
+        `${import.meta.env.VITE_API_URL}/admin/blockchain/register`,
         {
           method: "POST",
           headers: {
@@ -465,8 +473,6 @@ const handleReview = async (verificationId: string) => {
 
       if (data.success) {
         alert("Blockchain registration successful");
-
-        // reload applications to refresh UI
         loadApplications();
       } else {
         alert(data.message || "Blockchain failed");
@@ -478,22 +484,17 @@ const handleReview = async (verificationId: string) => {
     }
   }}
 >
-  Blockchain
+  {app.certificate?.registeredOnChain
+    ? "Registered"
+    : "Blockchain"}
 </button>
+
 <button
-  style={{
-    background: "#20c997",
-    color: "#fff",
-    border: "none",
-    padding: "6px 12px",
-    borderRadius: 6,
-    marginRight: 8,
-    cursor: "pointer"
-  }}
+  style={certificateBtn}
   onClick={async () => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/admin/generate-receipt/${app._id}`,
+        `${import.meta.env.VITE_API_URL}/admin/generate-receipt/${app._id}`,
         {
           headers: { Authorization: token || "" }
         }
@@ -521,7 +522,7 @@ const handleReview = async (verificationId: string) => {
   onClick={async () => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/admin/generate-goshvara/${app._id}`,
+        `${import.meta.env.VITE_API_URL}/admin/generate-goshvara/${app._id}`,
         {
           headers: {
             Authorization: token || ""
@@ -979,18 +980,12 @@ const certificateBtn = {
   border: "none",
   padding: "6px 12px",
   borderRadius: 6,
+  marginTop:2,
+  marginRight:8,
   cursor: "pointer"
 };
 
-const preStyle = {
-  maxHeight: 250,
-  overflowY: "auto" as const,
-  background: "#f8f9fa",
-  padding: 12,
-  borderRadius: 8,
-  fontSize: 13,
-  color:"black"
-};
+
 
 const reviewModal = {
   background: "#fff",
@@ -1044,5 +1039,6 @@ const blockchainBtn = {
   padding: "6px 12px",
   borderRadius: 6,
   marginRight: 8,
-  cursor: "pointer"
+   marginLeft: 8,
+  cursor: "pointer",
 };

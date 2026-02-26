@@ -10,27 +10,31 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = async () => {
-    try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+const handleLogin = async () => {
+  try {
+    // CLEAR OLD LOGIN DATA FIRST
+    localStorage.removeItem("applicant");
+    localStorage.removeItem("officer");
+    localStorage.removeItem("loggedIn");
 
-      const data = await res.json();
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
 
-      if (data.success) {
-        localStorage.setItem("loggedIn", "true");
-        localStorage.setItem("applicant", JSON.stringify(data.user));
-        navigate("/dashboard");
-      } else {
-        alert(data.message);
-      }
-    } catch (error) {
-      alert("Login failed");
+    const data = await res.json();
+
+    if (data.success) {
+      localStorage.setItem("applicant", JSON.stringify(data.user));
+      navigate("/dashboard");
+    } else {
+      alert(data.message);
     }
-  };
+  } catch {
+    alert("Login failed");
+  }
+};
 
   return (
     <>

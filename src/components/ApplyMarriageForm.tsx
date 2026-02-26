@@ -34,7 +34,7 @@ form.append("userId", applicant.email);
     form.append("data", JSON.stringify(textData));
 
     const res = await fetch(
-      "/api/applications",
+      `${import.meta.env.VITE_API_URL}/applications`,
       {
         method: "POST",
         body: form,

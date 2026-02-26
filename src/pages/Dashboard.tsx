@@ -37,7 +37,7 @@ useEffect(() => {
   const parsed = JSON.parse(stored);
 
   // FETCH FROM MONGODB
-  fetch(`http://localhost:5000/api/profile/${parsed.email}`)
+  fetch(`${import.meta.env.VITE_API_URL}/profile/${parsed.email}`)
     .then((res) => res.json())
 .then(async (data) => {
   if (data.success) {
@@ -45,7 +45,7 @@ useEffect(() => {
 
     // FETCH APPLICATION STATUS
     const res = await fetch(
-      `http://localhost:5000/api/applications/status/${data.user.email}`
+      `${import.meta.env.VITE_API_URL}/applications/status/${data.user.email}`
     );
 
     const appData = await res.json();
@@ -59,7 +59,7 @@ setCpan(appData.cpan || "");
 if (appData.application?.appointmentSlot) {
   try {
     const res = await fetch(
-      `http://localhost:5000/api/slots/${appData.application.appointmentSlot}`
+      `${import.meta.env.VITE_API_URL}/slots/${appData.application.appointmentSlot}`
     );
 
     const slotData = await res.json();
@@ -95,7 +95,7 @@ if (appData.application?.appointmentSlot) {
 const bookSlot = async (slotId: string) => {
   try {
     const res = await fetch(
-      "/api/slots/book",
+      `${import.meta.env.VITE_API_URL}/slots/book`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -218,7 +218,7 @@ background:
     setShowSlots(!showSlots);
 
     if (!showSlots) {
-      const res = await fetch("/api/slots/available");
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/slots/available`);
       const data = await res.json();
       if (data.success) setSlots(data.slots);
     }

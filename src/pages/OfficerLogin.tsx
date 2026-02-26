@@ -11,7 +11,7 @@ const OfficerLogin = () => {
 
   const login = async () => {
     const res = await fetch(
-      "/api/officer-auth/login",
+      `${import.meta.env.VITE_API_URL}/officer-auth/login`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
