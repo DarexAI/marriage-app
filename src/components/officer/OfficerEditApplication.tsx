@@ -40,7 +40,7 @@ const OfficerEditApplication = ({ application }: Props) => {
     });
 
     await fetch(
-      `http://localhost:5000/api/officer/update-application/${application._id}`,
+      `/api/officer/update-application/${application._id}`,
       {
         method: "PUT",
         body: form,
