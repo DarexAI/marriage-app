@@ -12,6 +12,10 @@ const path = require("path");
 const streamifier = require("streamifier");
 const cloudinary = require("../config/cloudinary");
 const Certificate = require("../models/Certificate");
+const crypto = require("crypto");
+const  PublicKey = require("@solana/web3.js");
+const blockchainService = require("../services/blockchain");
+
 // =====================================================
 // OVERVIEW STATS
 // =====================================================
@@ -55,8 +59,6 @@ router.get("/officers", protect, async (req, res) => {
 // =====================================================
 // ADD OFFICER
 // =====================================================
-
-
 router.post("/officers", async (req, res) => {
   try {
     const { password, ...rest } = req.body;
@@ -744,6 +746,7 @@ drawReceipt("Main Copy");
     res.status(500).json({ success: false });
   }
 });
+
 router.get("/generate-goshvara/:id", protect, async (req, res) => {
   try {
     const verification = await PhysicalVerification.findById(req.params.id)
@@ -957,6 +960,214 @@ await drawMainTable(doc, form, docs, verification, 2);
   } catch (err) {
     console.log(err);
     res.status(500).json({ success: false });
+  }
+});
+
+
+/**
+ * POST /blockchain/register
+ * Register a marriage certificate on Solana blockchain
+ * @body {string} cpan - Certificate Public Announcement Number
+ * @body {string} certificateUrl - URL of the generated certificate
+ */
+router.post("/blockchain/register", async (req, res) => {
+  try {
+    const { cpan, certificateUrl } = req.body;
+
+    if (!cpan) {
+      return res.status(400).json({
+        success: false,
+        message: "CPAN is required"
+      });
+    }
+
+    if (!blockchainService.isReady()) {
+      const initialized = await blockchainService.initialize();
+      if (!initialized) {
+        return res.status(503).json({
+          success: false,
+          message: "Blockchain service unavailable"
+        });
+      }
+    }
+
+    const certificate = await Certificate.findOne({ cpan });
+    if (!certificate) {
+      return res.status(404).json({
+        success: false,
+        message: "Certificate not found for given CPAN"
+      });
+    }
+
+    // check if already registered
+    if (certificate.registeredOnChain) {
+      return res.json({
+        success: true,
+        message: "Certificate already registered on blockchain",
+        data: {
+          certificateId: certificate.certificateId,
+          txSignature: certificate.txSignature,
+          certificateHash: certificate.certificateHash,
+          blockchainStatus: certificate.blockchainStatus
+        }
+      });
+    }
+
+    // prepare certificate data for hashing
+    const certData = JSON.stringify({
+      cpan: cpan,
+      certificateUrl: certificateUrl || certificate.certificateUrl,
+      applicationId: certificate.applicationId,
+      timestamp: new Date().toISOString()
+    });
+
+    const certId = `CERT-${cpan}`;
+    const hash = blockchainService.hashCertificate(certData);
+
+    console.log(`Registering certificate ${certId} on blockchain...`);
+
+    const result = await blockchainService.registerCertificate(certId, hash);
+
+    if (!result.success) {
+      // update certificate with error
+      certificate.blockchainStatus = "failed";
+      certificate.blockchainError = result.error;
+      certificate.certificateId = certId;
+      certificate.certificateHash = result.certificateHash;
+      await certificate.save();
+
+      return res.status(500).json({
+        success: false,
+        message: "Blockchain registration failed",
+        error: result.error
+      });
+    }
+
+    // update certificate with blockchain data
+    certificate.certificateId = certId;
+    certificate.txSignature = result.txSignature;
+    certificate.certificateHash = result.certificateHash;
+    certificate.blockchainStatus = "confirmed";
+    certificate.registeredOnChain = true;
+    await certificate.save();
+
+    console.log(`Certificate ${certId} registered successfully`);
+
+    res.json({
+      success: true,
+      message: "Certificate registered on blockchain successfully",
+      data: {
+        certificateId: certId,
+        txSignature: result.txSignature,
+        certificateHash: result.certificateHash,
+        recordPDA: result.recordPDA,
+        blockchainStatus: "confirmed"
+      }
+    });
+
+  } catch (error) {
+    console.error("Blockchain route error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /blockchain/verify/:cpan
+ * Verify a certificate on blockchain
+ */
+router.get("/blockchain/verify/:cpan", async (req, res) => {
+  try {
+    const { cpan } = req.params;
+
+    const certificate = await Certificate.findOne({ cpan });
+    if (!certificate) {
+      return res.status(404).json({
+        success: false,
+        message: "Certificate not found"
+      });
+    }
+
+    if (!certificate.registeredOnChain) {
+      return res.json({
+        success: false,
+        verified: false,
+        message: "Certificate not registered on blockchain"
+      });
+    }
+
+    if (blockchainService.isReady()) {
+      const certId = `CERT-${cpan}`;
+      const verificationResult = await blockchainService.verifyCertificate(certId);
+
+      return res.json({
+        success: true,
+        verified: verificationResult.verified,
+        data: {
+          certificateId: certificate.certificateId,
+          txSignature: certificate.txSignature,
+          certificateHash: certificate.certificateHash,
+          blockchainStatus: certificate.blockchainStatus,
+          ...verificationResult
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      verified: certificate.registeredOnChain,
+      data: {
+        certificateId: certificate.certificateId,
+        txSignature: certificate.txSignature,
+        certificateHash: certificate.certificateHash,
+        blockchainStatus: certificate.blockchainStatus,
+        note: "Blockchain verification unavailable, showing database status"
+      }
+    });
+
+  } catch (error) {
+    console.error("Verification error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Verification failed",
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /blockchain/status
+ * Get blockchain service status
+ */
+router.get("/blockchain/status", async (req, res) => {
+  try {
+    const isReady = blockchainService.isReady();
+    
+    if (!isReady) {
+      await blockchainService.initialize();
+    }
+
+    const balance = blockchainService.isReady() ? await blockchainService.getBalance() : 0;
+
+    res.json({
+      success: true,
+      status: {
+        initialized: blockchainService.isReady(),
+        walletBalance: balance,
+        network: process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com"
+      }
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      status: {
+        initialized: false,
+        error: error.message
+      }
+    });
   }
 });
 
