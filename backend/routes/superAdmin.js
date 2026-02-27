@@ -223,36 +223,37 @@ router.get("/generate-certificate/:id", protect, async (req, res) => {
     const form = app.formData || {};
     const docs = app.documents || {};
 
-    /* ===== DATA MAPPING (CORRECT KEYS) ===== */
+  /* ===== DATA MAPPING (NEW CLEAN KEYS) ===== */
+
 const groomNameEnglish =
-  `${form["groom_First Name *"] || ""} ${form["groom_Last Name *"] || ""}`;
+  `${form["groom_FirstName"] || ""} ${form["groom_LastName"] || ""}`;
 
 const groomNameMarathi =
-  `${form["groom_First Name (Marathi)*"] || ""} ${form["groom_Last Name (Marathi)*"] || ""}`;
+  `${form["groom_FirstName(Marathi)"] || ""} ${form["groom_LastName(Marathi)"] || ""}`;
 
 const brideNameEnglish =
-  `${form["bride_First Name *"] || ""} ${form["bride_Last Name *"] || ""}`;
+  `${form["bride_FirstName"] || ""} ${form["bride_LastName"] || ""}`;
 
 const brideNameMarathi =
-  `${form["bride_First Name (Marathi)*"] || ""} ${form["bride_Last Name (Marathi)*"] || ""}`;
+  `${form["bride_FirstName(Marathi)"] || ""} ${form["bride_LastName(Marathi)"] || ""}`;
 
 const groomAddressEnglish =
-  form["groom_Complete Address in English *"] || "N/A";
+  form["groom_CompleteAddressinEnglish"] || "N/A";
 
 const groomAddressMarathi =
-  form["groom_Complete Address in Marathi *"] || "N/A";
+  form["groom_CompleteAddressinMarathi"] || "N/A";
 
 const brideAddressEnglish =
-  form["bride_Complete Address in English *"] || "N/A";
+  form["bride_CompleteAddressinEnglish"] || "N/A";
 
 const brideAddressMarathi =
-  form["bride_Complete Address in Marathi *"] || "N/A";
+  form["bride_CompleteAddressinMarathi"] || "N/A";
 
 const marriageDate =
-  form["marriage_Marriage Date *"] || "N/A";
+  form["marriage_MarriageDate"] || "N/A";
 
-  const marriagePlace =
-  form["marriage_Place of Marriage *"] || "N/A";
+const marriagePlace =
+  form["marriage_PlaceofMarriage"] || "N/A";
 
 const appDate = new Date(app.createdAt).toLocaleDateString();
 
@@ -320,7 +321,7 @@ doc.moveDown(1);
 doc.font("marathi").fontSize(12)
 .text(
   `पतीचे नाव : ${groomNameMarathi}          आधार क्रमांक /Aadhar No.: ${
-    form["groom_Aadhaar Number *"] || "N/A"
+    form["groom_AadhaarNumber"] || "N/A"
   }`
 );
 
@@ -339,7 +340,7 @@ doc.moveDown(1);
 doc.font("marathi")
 .text(
   `पत्नीचे नाव : ${brideNameMarathi}          आधार क्रमांक /Aadhar No.: ${
-    form["bride_Aadhaar Number *"] || "N/A"
+    form["bride_AadhaarNumber"] || "N/A"
   }`
 );
 
@@ -379,19 +380,19 @@ doc.font("Helvetica").fontSize(11)
 doc.moveDown(1);
 const imageY = doc.y + 5;
 
-if (docs["groom_Photograph *"]) {
-  const g = await axios.get(docs["groom_Photograph *"], {
+if (docs["groom_Photograph"]) {
+  const g = await axios.get(docs["groom_Photograph"], {
     responseType: "arraybuffer"
   });
 
   doc.image(g.data, 100, imageY, {
-    fit: [90, 110],   // SAME SIZE ALWAYS
+    fit: [90, 110],
     align: "center"
   });
 }
 
-if (docs["bride_Photograph *"]) {
-  const b = await axios.get(docs["bride_Photograph *"], {
+if (docs["bride_Photograph"]) {
+  const b = await axios.get(docs["bride_Photograph"], {
     responseType: "arraybuffer"
   });
 
@@ -492,14 +493,14 @@ router.get("/generate-receipt/:id", protect, async (req, res) => {
     const app = verification.applicationId;
     const form = app.formData || {};
 
-    const groomName =
-      `${form["groom_First Name *"] || ""} ${form["groom_Last Name *"] || ""}`;
+   const groomName =
+  `${form["groom_FirstName"] || ""} ${form["groom_LastName"] || ""}`;
 
-    const brideName =
-      `${form["bride_First Name *"] || ""} ${form["bride_Last Name *"] || ""}`;
+const brideName =
+  `${form["bride_FirstName"] || ""} ${form["bride_LastName"] || ""}`;
 
-    const marriageDate =
-      form["marriage_Marriage Date *"] || "N/A";
+const marriageDate =
+  form["marriage_MarriageDate"] || "N/A";
 
     const receiptDate = new Date().toLocaleDateString("en-IN");
 
@@ -785,19 +786,19 @@ router.get("/generate-goshvara/:id", protect, async (req, res) => {
     );
 
     const groomName =
-      `${form["groom_First Name *"]} ${form["groom_Last Name *"]}`;
+  `${form["groom_FirstName"] || ""} ${form["groom_LastName"] || ""}`;
 
-    const brideName =
-      `${form["bride_First Name *"]} ${form["bride_Last Name *"]}`;
+const brideName =
+  `${form["bride_FirstName"] || ""} ${form["bride_LastName"] || ""}`;
 
-    const groomAddress =
-      form["groom_Complete Address in English *"];
+const groomAddress =
+  form["groom_CompleteAddressinEnglish"] || "N/A";
 
-    const brideAddress =
-      form["bride_Complete Address in English *"];
+const brideAddress =
+  form["bride_CompleteAddressinEnglish"] || "N/A";
 
-    const marriageDate =
-      form["marriage_Marriage Date *"];
+const marriageDate =
+  form["marriage_MarriageDate"] || "N/A";
 
     const cpan = verification.cpan;
 
@@ -896,42 +897,42 @@ const drawMainTable = async (doc, form, docs, verification, page = 1) => {
 
   drawHeaderRow();
 
-  if (page === 1) {
-    await drawPersonRow(
-      "वराची माहिती",
-      `${form["groom_First Name *"]} ${form["groom_Last Name *"]}`,
-      form["groom_Complete Address in English *"],
-      docs["groom_Photograph *"]
-    );
+if (page === 1) {
+  await drawPersonRow(
+    "वराची माहिती",
+    `${form["groom_FirstName"] || ""} ${form["groom_LastName"] || ""}`,
+    form["groom_CompleteAddressinEnglish"] || "N/A",
+    docs["groom_Photograph"]
+  );
 
-    await drawPersonRow(
-      "वधूची माहिती",
-      `${form["bride_First Name *"]} ${form["bride_Last Name *"]}`,
-      form["bride_Complete Address in English *"],
-      docs["bride_Photograph *"]
-    );
-  } else {
-    await drawPersonRow(
-      "साक्षीदार १",
-      form["witness1_Witness 1 Full Name *"],
-      form["witness1_Complete Address *"],
-      docs["witness1_Witness 1 Photo *"]
-    );
+  await drawPersonRow(
+    "वधूची माहिती",
+    `${form["bride_FirstName"] || ""} ${form["bride_LastName"] || ""}`,
+    form["bride_CompleteAddressinEnglish"] || "N/A",
+    docs["bride_Photograph"]
+  );
+} else {
+  await drawPersonRow(
+    "साक्षीदार १",
+    form["witness1_Witness1FullName"] || "",
+    form["witness1_CompleteAddress"] || "N/A",
+    docs["witness1_Witness1Photo"]
+  );
 
-    await drawPersonRow(
-      "साक्षीदार २",
-      form["witness2_Witness 2 Full Name *"],
-      form["witness2_Complete Address *"],
-      docs["witness2_Witness 2 Photo *"]
-    );
+  await drawPersonRow(
+    "साक्षीदार २",
+    form["witness2_Witness2FullName"] || "",
+    form["witness2_CompleteAddress"] || "N/A",
+    docs["witness2_Witness2Photo"]
+  );
 
-    await drawPersonRow(
-      "साक्षीदार ३",
-      form["witness3_Witness 3 Full Name *"],
-      form["witness3_Complete Address *"],
-      docs["witness3_Witness 3 Photo *"]
-    );
-  }
+  await drawPersonRow(
+    "साक्षीदार ३",
+    form["witness3_Witness3FullName"] || "",
+    form["witness3_CompleteAddress"] || "N/A",
+    docs["witness3_Witness3Photo"]
+  );
+}
 
   drawSealRow();
 };
