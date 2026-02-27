@@ -12,19 +12,110 @@ const [cpan, setCpan] = useState("");
 const validateForm = () => {
   const missing: string[] = [];
 
-  Object.entries(formData).forEach(([key, value]) => {
-    // Only validate mandatory fields (those with *)
-    if (key.includes("*")) {
-      if (value instanceof File) return;
+  // List ALL required fields explicitly (clean names)
+  const requiredFields = [
+    // Groom
+    "groom_FirstName",
+    "groom_LastName",
+    "groom_FirstName(Marathi)",
+    "groom_LastName(Marathi)",
+    "groom_FathersName",
+    "groom_DateofBirth",
+    "groom_AgeatMarriage",
+    "groom_Gender",
+    "groom_Occupation",
+    "groom_Religion",
+    "groom_AadhaarNumber",
+    "groom_CompleteAddressinEnglish",
+    "groom_CompleteAddressinMarathi",
+    "groom_Photograph",
+    "groom_Aadhaar",
+    "groom_AgeProofType",
+    "groom_ProofofAge",
+    "groom_ResidenceProofType",
+    "groom_ProofofResidence",
 
-      if (!value || value === "") {
-        missing.push(key);
+    // Bride
+    "bride_FirstName",
+    "bride_LastName",
+    "bride_FirstName(Marathi)",
+    "bride_LastName(Marathi)",
+    "bride_FathersName",
+    "bride_DateofBirth",
+    "bride_AgeatMarriage",
+    "bride_Gender",
+    "bride_Occupation",
+    "bride_Religion",
+    "bride_AadhaarNumber",
+    "bride_CompleteAddressinEnglish",
+    "bride_CompleteAddressinMarathi",
+    "bride_Photograph",
+    "bride_Aadhaar",
+    "bride_AgeProofType",
+    "bride_ProofofAge",
+    "bride_ResidenceProofType",
+    "bride_ProofofResidence",
+
+    // Marriage
+    "marriage_MarriageDate",
+    "marriage_PlaceofMarriage",
+    "marriage_MarriageType",
+    "marriage_Ward/Zone",
+
+    // Priest
+    "priest_Priest/RegistrarName",
+    "priest_PriestAadhaarNumber",
+    "priest_PriestAddress",
+
+    // Marriage Docs
+    "marriageDoc_WeddingCard/Invitation",
+    "marriageDoc_PriestSignature/Certificate",
+    "marriageDoc_MarriageAffidavit",
+    "marriageDoc_WeddingPhoto",
+
+    // Witnesses (repeat pattern)
+    "witness1_Witness1FullName",
+    "witness1_Witness1MobileNumber",
+    "witness1_Witness1AadhaarNumber",
+    "witness1_RelationtoBride/Groom",
+    "witness1_CompleteAddress",
+    "witness1_IDProofType",
+    "witness1_IDProof",
+    "witness1_Witness1Photo",
+
+    "witness2_Witness2FullName",
+    "witness2_Witness2MobileNumber",
+    "witness2_Witness2AadhaarNumber",
+    "witness2_RelationtoBride/Groom",
+    "witness2_CompleteAddress",
+    "witness2_IDProofType",
+    "witness2_IDProof",
+    "witness2_Witness2Photo",
+
+    "witness3_Witness3FullName",
+    "witness3_Witness3MobileNumber",
+    "witness3_Witness3AadhaarNumber",
+    "witness3_RelationtoBride/Groom",
+    "witness3_CompleteAddress",
+    "witness3_IDProofType",
+    "witness3_IDProof",
+    "witness3_Witness3Photo",
+  ];
+
+  requiredFields.forEach((field) => {
+    const value = formData[field];
+
+    if (value instanceof File) {
+      if (!value) missing.push(field);
+    } else {
+      if (!value || value.toString().trim() === "") {
+        missing.push(field);
       }
     }
   });
 
   if (missing.length > 0) {
-    console.log("Missing fields:", missing);
+    console.log("Missing Fields:", missing);
     alert("Please fill all mandatory fields before submitting.");
     return false;
   }
@@ -410,7 +501,8 @@ const WitnessDocuments = ({ prefix, number, formData, setFormData }: any) => (
 
 /* FIELD COMPONENT */
 const Field = ({ label, type, textarea, prefix, formData, setFormData }: any) => {
-  const key = `${prefix}_${label}`;
+const cleanLabel = label.replace(/\s|\*/g, "");
+const key = `${prefix}_${cleanLabel}`;
 
 const handleChange = (e: any) => {
   let val;
