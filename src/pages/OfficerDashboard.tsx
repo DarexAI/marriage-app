@@ -85,14 +85,17 @@ const filterReports = () => {
     );
   }
 
-  if (reportType === "date" && selectedDate) {
-    filtered = applications.filter(
-      app =>
-        new Date(app.appointmentSlot?.date)
-          .toISOString()
-          .slice(0, 10) === selectedDate
+if (reportType === "date" && selectedDate) {
+  filtered = applications.filter(app => {
+    if (!app.appointmentSlot?.date) return false;
+
+    return (
+      new Date(app.appointmentSlot.date)
+        .toISOString()
+        .slice(0, 10) === selectedDate
     );
-  }
+  });
+}
 
   setFilteredApps(filtered);
 };

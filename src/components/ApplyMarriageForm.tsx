@@ -9,6 +9,89 @@ const ApplyMarriageForm = () => {
 const [showSuccess, setShowSuccess] = useState(false);
 const [cpan, setCpan] = useState("");
 
+const validateForm = () => {
+  const prefixes = [
+    "groom",
+    "bride",
+    "marriage",
+    "priest",
+    "marriageDoc",
+    "witness1",
+    "witness2",
+    "witness3"
+  ];
+
+  const requiredLabels = [
+    "First Name *",
+    "Last Name *",
+    "First Name (Marathi)*",
+    "Last Name (Marathi)*",
+    "Father's Name *",
+    "Date of Birth *",
+    "Age at Marriage *",
+    "Gender *",
+    "Occupation *",
+    "Religion *",
+    "Aadhaar Number *",
+    "Complete Address in English *",
+    "Complete Address in Marathi *",
+    "Photograph *",
+    "Aadhaar *",
+    "Age Proof Type *",
+    "Proof of Age *",
+    "Residence Proof Type *",
+    "Proof of Residence *",
+    "Marriage Date *",
+    "Place of Marriage *",
+    "Marriage Type *",
+    "Ward/Zone *",
+    "Priest / Registrar Name *",
+    "Priest Aadhaar Number *",
+    "Priest Address *",
+    "Wedding Card / Invitation *",
+    "Priest Signature / Certificate *",
+    "Marriage Affidavit *",
+    "Wedding Photo *",
+    "Witness 1 Full Name *",
+    "Witness 1 Mobile Number *",
+    "Witness 1 Aadhaar Number *",
+    "Witness 2 Full Name *",
+    "Witness 2 Mobile Number *",
+    "Witness 2 Aadhaar Number *",
+    "Witness 3 Full Name *",
+    "Witness 3 Mobile Number *",
+    "Witness 3 Aadhaar Number *",
+    "Relation to Bride/Groom *",
+    "Complete Address *",
+    "ID Proof Type *",
+    "ID Proof *",
+    "Witness 1 Photo *",
+    "Witness 2 Photo *",
+    "Witness 3 Photo *"
+  ];
+
+  const missing: string[] = [];
+
+  prefixes.forEach(prefix => {
+    requiredLabels.forEach(label => {
+      const key = `${prefix}_${label}`;
+      const value = formData[key];
+
+      if (value instanceof File) return;
+
+      if (!value || value === "") {
+        missing.push(key);
+      }
+    });
+  });
+
+  if (missing.length > 0) {
+    alert("Please fill all mandatory fields before submitting.");
+    return false;
+  }
+
+  return true;
+};
 
 const submitApplication = async () => {
   try {
@@ -157,9 +240,15 @@ form.append("userId", applicant.email);
             Next
           </button>
         ) : (
-          <button style={btnPrimary} onClick={submitApplication}>
-            Submit Application
-          </button>
+<button
+  style={btnPrimary}
+  onClick={() => {
+    if (!validateForm()) return;
+    submitApplication();
+  }}
+>
+  Submit Application
+</button>
         )}
       </div>
       {showSuccess && (
