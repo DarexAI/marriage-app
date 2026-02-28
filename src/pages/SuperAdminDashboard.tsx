@@ -506,7 +506,7 @@ const handleReview = async (verificationId: string) => {
     }
   }}
 >
-  Receipt
+  Show Receipt to User
 </button>
 
 <button
@@ -543,7 +543,7 @@ const handleReview = async (verificationId: string) => {
     if (data.success) window.open(data.url, "_blank");
   }}
 >
-  {app.certificate?.registeredOnChain ? "Goshvara" : "Goshvara 🔒"}
+  {app.certificate?.registeredOnChain ? "Generate Goshvara" : "Goshvara 🔒"}
 </button>
             </td>
           </tr>
