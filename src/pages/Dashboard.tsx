@@ -20,12 +20,13 @@ const Dashboard = () => {
   const [application, setApplication] = useState<any>(null);
 const [appStatus, setAppStatus] = useState("not_applied");
 const [cpan, setCpan] = useState("");
-
+const [documents, setDocuments] = useState<any>(null);
+const [checkingDocs, setCheckingDocs] = useState(false);
+const [popupMsg, setPopupMsg] = useState<string | null>(null);
 const [slots, setSlots] = useState<any[]>([]);
 const [showSlots, setShowSlots] = useState(false);
 const [selectedSlot, setSelectedSlot] = useState<any>(null);
-
-
+const [loadingTab, setLoadingTab] = useState<string | null>(null);
 useEffect(() => {
   const stored = localStorage.getItem("applicant");
 
@@ -52,6 +53,29 @@ useEffect(() => {
 setApplication(appData.application || null);
 setAppStatus(appData.status || "not_applied");
 setCpan(appData.cpan || "");
+// CHECK IF DOCUMENTS EXIST IN CERTIFICATES TABLE
+if (appData.cpan) {
+  try {
+    setCheckingDocs(true);
+
+    const docRes = await fetch(
+      `${import.meta.env.VITE_API_URL}/documents/${appData.cpan}`
+    );
+
+    const docData = await docRes.json();
+
+    if (docData.success) {
+      setDocuments(docData.documents);
+    } else {
+      setDocuments(null);
+    }
+
+  } catch {
+    setDocuments(null);
+  } finally {
+    setCheckingDocs(false);
+  }
+}
 
 // CHECK IF SLOT STILL EXISTS
 // CHECK IF SLOT STILL EXISTS
@@ -85,12 +109,15 @@ if (appData.application?.appointmentSlot) {
 
 
 
+
   }
   
 })
     .catch(() => navigate("/login"));
 
 }, [navigate]);
+
+
 
 const bookSlot = async (slotId: string) => {
   try {
@@ -111,8 +138,7 @@ const bookSlot = async (slotId: string) => {
     const data = await res.json();
 
     if (data.success) {
-      alert("Verification slot booked");
-
+  setPopupMsg("Verification slot booked successfully!");
       // UPDATE UI WITHOUT RELOAD
       const slot = slots.find(s => s._id === slotId);
 setSelectedSlot(slot);
@@ -130,11 +156,11 @@ setApplication((prev: any) => ({
 setShowSlots(false);
 
     } else {
-      alert(data.msg);
+      setPopupMsg(data.msg);
     }
 
   } catch {
-    alert("Booking failed");
+    setPopupMsg("Booking failed");
   }
 };
 
@@ -145,6 +171,17 @@ setShowSlots(false);
   return (
     <>
       <Navbar />
+      {popupMsg && (
+  <div style={toastStyle}>
+    <span>{popupMsg}</span>
+    <span
+      onClick={() => setPopupMsg(null)}
+      style={closeStyle}
+    >
+      ✕
+    </span>
+  </div>
+)}
 
       <div
         style={{
@@ -155,7 +192,7 @@ setShowSlots(false);
           color: "black",
         }}
       >
-        {/* USER CARD */}
+     {/* USER CARD */}
 <div
   style={{
     background: "white",
@@ -315,25 +352,57 @@ cursor: selectedSlot ? "not-allowed" : "pointer",
           }}
         >
           {["profile", "applications", "apply", "notifications"].map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              style={{
-                border: "none",
-                background: "none",
-                padding: "10px 15px",
-                cursor: "pointer",
-                fontWeight: 600,
-                borderBottom:
-                  tab === t ? "3px solid #3b6edc" : "none",
-                color: tab === t ? "#3b6edc" : "black",
-              }}
-            >
-              {t === "profile" && "Profile"}
-              {t === "applications" && "My Applications"}
-              {t === "apply" && "Apply Marriage"}
-              {t === "notifications" && "Notifications"}
-            </button>
+           <button
+  key={t}
+  onClick={() => {
+    if (t === tab) return;
+
+    setLoadingTab(t);
+
+    setTimeout(() => {
+      setTab(t);
+      setLoadingTab(null);
+    }, 800);
+  }}
+  style={{
+    border: "none",
+    background: "none",
+    padding: "10px 15px",
+    cursor: "pointer",
+    fontWeight: 600,
+    borderBottom: tab === t ? "3px solid #3b6edc" : "none",
+    color: tab === t ? "#3b6edc" : "black",
+    position: "relative",
+    minWidth: 150, // 🔥 prevents shrink
+    height: 40,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center"
+  }}
+>
+  {/* TEXT */}
+  <span style={{ opacity: loadingTab === t ? 0 : 1 }}>
+    {t === "profile" && "Profile"}
+    {t === "applications" && "My Applications"}
+    {t === "apply" && "Apply Marriage"}
+    {t === "notifications" && "Notifications"}
+  </span>
+
+  {/* LOADER */}
+  {loadingTab === t && (
+    <span
+      style={{
+        position: "absolute",
+        width: 18,
+        height: 18,
+        border: "2px solid #3b6edc",
+        borderTop: "2px solid transparent",
+        borderRadius: "50%",
+        animation: "tabSpin 0.6s linear infinite"
+      }}
+    />
+  )}
+</button>
           ))}
         </div>
 
@@ -438,13 +507,87 @@ cursor: selectedSlot ? "not-allowed" : "pointer",
 )}
 
 
-        {tab === "notifications" && (
-          <div style={cardStyle}>
-            <h3>Notifications</h3>
-            <p>No new notifications.</p>
+{tab === "notifications" && (
+  <div style={cardStyle}>
+    <h3>Documents</h3>
+
+    {!cpan && <p>No application found.</p>}
+
+    {cpan && checkingDocs && (
+      <p>Checking documents...</p>
+    )}
+
+    {cpan && !checkingDocs && !documents && (
+      <p>No documents generated yet.</p>
+    )}
+
+    {cpan && !checkingDocs && documents && (
+      <>
+        {(documents.certificateUrl ||
+          documents.receiptUrl ||
+          documents.goshvaraUrl) ? (
+
+          <div style={{ display: "flex", gap: 15, marginTop: 20 }}>
+
+            {documents.certificateUrl && (
+              <button
+                onClick={() =>
+                  window.open(documents.certificateUrl, "_blank")
+                }
+                style={docBtnStyle}
+              >
+                View Certificate
+              </button>
+            )}
+
+            {documents.receiptUrl && (
+              <button
+                onClick={() =>
+                  window.open(documents.receiptUrl, "_blank")
+                }
+                style={docBtnStyle}
+              >
+                View Receipt
+              </button>
+            )}
+
+            {documents.goshvaraUrl && (
+              <button
+                onClick={() =>
+                  window.open(documents.goshvaraUrl, "_blank")
+                }
+                style={docBtnStyle}
+              >
+                View Goshvara
+              </button>
+            )}
+
           </div>
+
+        ) : (
+          <p>No documents available yet.</p>
         )}
+      </>
+    )}
+  </div>
+)}
       </div>
+      <style>
+{`
+@keyframes tabSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+`}
+</style>
+<style>
+{`
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+`}
+</style>
       <Footer />
     </>
   );
@@ -457,4 +600,51 @@ const cardStyle: React.CSSProperties = {
   boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
 };
 
+const tabLoaderOverlay: React.CSSProperties = {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  width: "100%",
+  height: "100%",
+  background: "rgba(255,255,255,0.7)",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  zIndex: 999,
+};
+
+const toastStyle: React.CSSProperties = {
+  position: "fixed",
+  top: 20,
+  right: 20,
+  background: "#28a745",
+  color: "white",
+  padding: "12px 18px",
+  borderRadius: 8,
+  display: "flex",
+  alignItems: "center",
+  gap: 15,
+  boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+  zIndex: 9999,
+  animation: "fadeIn 0.3s ease-in-out"
+};
+
+const docBtnStyle: React.CSSProperties = {
+  padding: "10px 18px",
+  background: "#3b6edc",
+  color: "white",
+  border: "none",
+  borderRadius: 8,
+  cursor: "pointer",
+  fontWeight: 600
+};
+
+const closeStyle: React.CSSProperties = {
+  cursor: "pointer",
+  fontWeight: "bold",
+};
+
+
 export default Dashboard;
+
+

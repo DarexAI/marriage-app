@@ -3,7 +3,14 @@ import OfficerEditApplication from "../components/officer/OfficerEditApplication
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useNavigate } from "react-router-dom";
-
+const style = document.createElement("style");
+style.innerHTML = `
+@keyframes spinInline {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+`;
+document.head.appendChild(style);
 interface Slot {
   _id: string;
   date: string;
@@ -38,6 +45,10 @@ const [applications, setApplications] = useState<Application[]>([]);
   const [scheduleApp, setScheduleApp] = useState<any>(null);
   const [appointmentDate, setAppointmentDate] = useState("");
   const [slotModal, setSlotModal] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+  id: string;
+  name: string;
+} | null>(null);
   const [slotDate, setSlotDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -46,12 +57,18 @@ const [rescheduleApp, setRescheduleApp] = useState<Application | null>(null);
 const [availableSlots, setAvailableSlots] = useState<Slot[]>([]);
 const [menuOpen, setMenuOpen] = useState(false);
 const navigate = useNavigate();
+const [popup, setPopup] = useState<{
+  message: string;
+  type: "success" | "error";
+} | null>(null);
 const [verifyApp, setVerifyApp] = useState<any>(null);
 const [groomPhoto, setGroomPhoto] = useState("");
 const [bridePhoto, setBridePhoto] = useState("");
 const [w1Photo, setW1Photo] = useState("");
 const [w2Photo, setW2Photo] = useState("");
 const [w3Photo, setW3Photo] = useState("");
+const [loadingTab, setLoadingTab] = useState<string | null>(null);
+const [certStatusMap, setCertStatusMap] = useState<any>({});
 const [selectedSlot, setSelectedSlot] = useState("");
 const [selectedDate, setSelectedDate] = useState("");
 const [filteredApps, setFilteredApps] = useState<Application[]>([]);
@@ -146,11 +163,28 @@ const printReport = () => {
   printWindow.print();
 };
 
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/officer/applications`)
-      .then(res => res.json())
-      .then(data => setApplications(data || []));
-  }, []);
+useEffect(() => {
+  const fetchApps = async () => {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/officer/applications`);
+    const data = await res.json();
+    setApplications(data || []);
+
+    // Fetch blockchain status for each
+    const statusObj: any = {};
+
+    for (const app of data) {
+      const res2 = await fetch(
+        `${import.meta.env.VITE_API_URL}/officer/certificate-status/${app.cpan}`
+      );
+      const certData = await res2.json();
+      statusObj[app.cpan] = certData.blockchainReady;
+    }
+
+    setCertStatusMap(statusObj);
+  };
+
+  fetchApps();
+}, []);
 
   useEffect(() => {
   if (activeTab === "citizens") {
@@ -163,13 +197,21 @@ const printReport = () => {
 }, [activeTab]);
 
 const deleteCitizen = async (id: string) => {
-  if (!window.confirm("Delete this citizen?")) return;
+  try {
+    await fetch(
+      `${import.meta.env.VITE_API_URL}/citizens/${id}`,
+      { method: "DELETE" }
+    );
 
-  await fetch(`{import.meta.env.VITE_API_URL}/citizens/${id}`, {
-    method: "DELETE"
-  });
+    setCitizens(prev => prev.filter(c => c._id !== id));
 
-  setCitizens(prev => prev.filter(c => c._id !== id));
+    setPopup({ message: "Citizen deleted successfully", type: "success" });
+
+  } catch {
+    setPopup({ message: "Failed to delete citizen", type: "error" });
+  }
+
+  setDeleteConfirm(null);
 };
 
 
@@ -208,7 +250,7 @@ const deleteCitizen = async (id: string) => {
       })
     });
 
-    alert("Slot Added");
+setPopup({ message: "Slot Added Successfully", type: "success" });
     setSlotModal(false);
   };
 
@@ -239,9 +281,9 @@ applicationId: rescheduleApp?._id
     }
   );
 
-  alert("Appointment Rescheduled");
+setPopup({ message: "Appointment Rescheduled Successfully", type: "success" });
   setRescheduleApp(null);
-  window.location.reload();
+  setTimeout(() => window.location.reload(), 1200);
 };
 
 const captureImage = () => {
@@ -364,24 +406,60 @@ onClick={() => {
 
       {/* TABS */}
       <div style={tabBar}>
-        {["applications", "appointments", "citizens", "report"].map(tab => (
-          <button
-          key={tab}
-          onClick={() => setActiveTab(tab)}
-            style={{
-              ...tabBtn,
-              borderBottom:
-              activeTab === tab
-              ? "3px solid #3b6edc"
-                  : "3px solid transparent"
-            }}
-          >
-            {tab === "applications" && "Applications"}
-            {tab === "appointments" && "Upcoming Appointments"}
-            {tab === "citizens" && "Citizens"}
-            {tab === "report" && "Report"}
-          </button>
-        ))}
+{["applications", "appointments", "citizens", "report"].map(tab => (
+  <button
+    key={tab}
+    onClick={() => {
+      if (tab === activeTab) return;
+
+      setLoadingTab(tab);
+
+      setTimeout(() => {
+        setActiveTab(tab);
+        setLoadingTab(null);
+      }, 800);
+    }}
+    style={{
+      ...tabBtn,
+      borderBottom:
+        activeTab === tab
+          ? "3px solid #3b6edc"
+          : "3px solid transparent",
+      minWidth: 180,
+      position: "relative"
+    }}
+  >
+    {/* TEXT */}
+    <span
+      style={{
+        visibility: loadingTab === tab ? "hidden" : "visible"
+      }}
+    >
+      {tab === "applications" && "Applications"}
+      {tab === "appointments" && "Upcoming Appointments"}
+      {tab === "citizens" && "Citizens"}
+      {tab === "report" && "Report"}
+    </span>
+
+    {/* SPINNER */}
+{loadingTab === tab && (
+  <span
+    style={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      width: 18,
+      height: 18,
+      border: "3px solid #3b6edc",
+      borderTop: "3px solid transparent",
+      borderRadius: "50%",
+      transform: "translate(-50%, -50%)",
+      animation: "spinInline 0.7s linear infinite"
+    }}
+  />
+)}
+  </button>
+))}
       </div>
 
       {/* APPLICATION TAB */}
@@ -465,7 +543,7 @@ onClick={() => {
       if (data.success) {
         setViewApp(data.application);
       } else {
-        alert("Application not found");
+       setPopup({ message: "Application not found", type: "error" });
       }
     }}
   >
@@ -489,11 +567,11 @@ onClick={() => {
             if (data.success) {
               window.open(data.url, "_blank");
             } else {
-              alert("Failed to generate receipt");
+           setPopup({ message: "Failed to generate receipt", type: "error" });
             }
           } catch (err) {
             console.log(err);
-            alert("Receipt error");
+            setPopup({ message: "Server error while generating receipt", type: "error" });
           }
         }}
       >
@@ -502,53 +580,103 @@ onClick={() => {
 
       {/* GOSHVARA */}
       <button
-        style={{ ...certificateBtn, marginLeft: 6 }}
-        onClick={async () => {
-          try {
-            const res = await fetch(
-              `${import.meta.env.VITE_API_URL}/officer/generate-goshvara/${app.cpan}`
-            );
+  disabled={!certStatusMap[app.cpan]}
+  title={
+    !certStatusMap[app.cpan]
+      ? "Waiting for blockchain confirmation"
+      : ""
+  }
+  style={{
+    ...certificateBtn,
+    marginLeft: 6,
+    opacity: certStatusMap[app.cpan] ? 1 : 0.5,
+    cursor: certStatusMap[app.cpan]
+      ? "pointer"
+      : "not-allowed"
+  }}
+  onClick={async () => {
+    if (!certStatusMap[app.cpan]) return;
 
-            const data = await res.json();
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/officer/generate-goshvara/${app.cpan}`
+      );
 
-            if (data.success) {
-              window.open(data.url, "_blank");
-            } else {
-              alert("Failed to generate Goshvara");
-            }
-          } catch (err) {
-            console.log(err);
-            alert("Goshvara error");
-          }
-        }}
-      >
-        Goshvara
-      </button>
+      const data = await res.json();
 
-      {/* CERTIFICATE */}
-      <button
-        style={{ ...certificateBtn, marginLeft: 6 }}
-        onClick={async () => {
-          try {
-            const res = await fetch(
-              `${import.meta.env.VITE_API_URL}/officer/generate-certificate/${app.cpan}`
-            );
+      if (data.success) {
+        window.open(data.url, "_blank");
+      } else {
+        setPopup({
+  message: data.message || "Failed to generate Goshvara",
+  type: "error"
+});
+      }
+    } catch (err) {
+      console.log(err);
+      setPopup({ message: "Server error while generating Goshvara", type: "error" });
+    }
+  }}
+>
+  {certStatusMap[app.cpan] ? "Goshvara" : "Goshvara 🔒"}
+</button>
 
-            const data = await res.json();
+  <button
+  disabled={!certStatusMap[app.cpan]}
+  title={
+    !certStatusMap[app.cpan]
+      ? "Certificate not confirmed on blockchain"
+      : "Generate Certificate"
+  }
+  style={{
+    ...certificateBtn,
+    marginLeft: 6,
+    opacity: certStatusMap[app.cpan] ? 1 : 0.5,
+    cursor: certStatusMap[app.cpan]
+      ? "pointer"
+      : "not-allowed",
+    display: "flex",
+    alignItems: "center",
+    gap: 6
+  }}
+  onClick={async () => {
+    if (!certStatusMap[app.cpan]) return;
 
-            if (data.success) {
-              window.open(data.url, "_blank");
-            } else {
-              alert("Failed to generate certificate");
-            }
-          } catch (err) {
-            console.log(err);
-            alert("Certificate error");
-          }
-        }}
-      >
-        Certificate
-      </button>
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/officer/generate-certificate/${app.cpan}`
+      );
+
+      if (!res.ok) {
+        const errData = await res.json();
+        setPopup({
+  message: errData.message || "Blockchain confirmation pending",
+  type: "error"
+});
+        return;
+      }
+
+      const data = await res.json();
+
+      if (data.success) {
+        window.open(data.url, "_blank");
+      } else {
+        setPopup({ message: "Failed to generate certificate", type: "error" });
+      }
+    } catch (err) {
+      console.error(err);
+      setPopup({ message: "Server error while generating certificate", type: "error" });
+    }
+  }}
+>
+  {certStatusMap[app.cpan] ? (
+    "Certificate"
+  ) : (
+    <>
+      Certificate 🔒
+    </>
+  )}
+</button>
     </>
   )}
 </td>
@@ -686,6 +814,12 @@ onClick={() => {
 {rescheduleApp && (
   <div style={overlay}>
     <div style={modal}>
+      <button
+  style={closeIconBtn}
+  onClick={() => setRescheduleApp(null)}
+>
+  ×
+</button>
       <h3>Reschedule Appointment</h3>
 
       {availableSlots.length === 0 && (
@@ -728,6 +862,12 @@ onClick={() => {
 {verifyApp && (
   <div style={overlay}>
     <div style={modal}>
+      <button
+  style={closeIconBtn}
+  onClick={() => setVerifyApp(null)}
+>
+  ×
+</button>
      <h3>Application Verification – {verifyApp.cpan}</h3>
 <h4>Uploaded Documents</h4>
 <h4>Edit Application (Optional)</h4>
@@ -749,32 +889,69 @@ onClick={() => {
       {/* LIVE PHOTO SECTION */}
       <h4>Live Photo Capture</h4>
 
-{[
-  { label: "Groom", setter: setGroomPhoto, photo: groomPhoto },
-  { label: "Bride", setter: setBridePhoto, photo: bridePhoto },
-  { label: "Witness 1", setter: setW1Photo, photo: w1Photo },
-  { label: "Witness 2", setter: setW2Photo, photo: w2Photo },
-  { label: "Witness 3", setter: setW3Photo, photo: w3Photo }
-].map(({ label, setter, photo }) => (
-  <div key={label} style={{ marginBottom: 15 }}>
-    <b>{label}</b>
+<table
+  style={{
+    width: "100%",
+    borderCollapse: "collapse",
+    marginTop: 10
+  }}
+>
+  <thead>
+    <tr style={{ background: "#f1f3f6" }}>
+      <th style={{ padding: 10, textAlign: "left" }}>Person</th>
+      <th style={{ padding: 10, textAlign: "left" }}>Capture</th>
+      <th style={{ padding: 10, textAlign: "left" }}>Preview</th>
+    </tr>
+  </thead>
 
-    <button
-      style={{ ...scheduleBtn, marginLeft: 10 }}
-      onClick={() => openCamera(setter)}
-    >
-      Capture
-    </button>
+  <tbody>
+    {[
+      { label: "Groom", setter: setGroomPhoto, photo: groomPhoto },
+      { label: "Bride", setter: setBridePhoto, photo: bridePhoto },
+      { label: "Witness 1", setter: setW1Photo, photo: w1Photo },
+      { label: "Witness 2", setter: setW2Photo, photo: w2Photo },
+      { label: "Witness 3", setter: setW3Photo, photo: w3Photo }
+    ].map(({ label, setter, photo }) => (
+      <tr key={label} style={{ borderBottom: "1px solid #eee" }}>
+        
+        {/* PERSON NAME */}
+        <td style={{ padding: 12, fontWeight: 600 }}>
+          {label}
+        </td>
 
-    {photo && (
-      <img
-        src={photo}
-        alt="preview"
-        style={{ width: 150, marginTop: 10, borderRadius: 6 }}
-      />
-    )}
-  </div>
-))}
+        {/* CAPTURE BUTTON */}
+        <td style={{ padding: 12 }}>
+          <button
+            style={scheduleBtn}
+            onClick={() => openCamera(setter)}
+          >
+            Capture
+          </button>
+        </td>
+
+        {/* IMAGE PREVIEW */}
+        <td style={{ padding: 12 }}>
+          {photo ? (
+            <img
+              src={photo}
+              alt="preview"
+              style={{
+                width: 120,
+                height: 120,
+                objectFit: "cover",
+                borderRadius: 8,
+                border: "1px solid #ddd"
+              }}
+            />
+          ) : (
+            <span style={{ color: "#888" }}>No photo</span>
+          )}
+        </td>
+
+      </tr>
+    ))}
+  </tbody>
+</table>
 
       <button
         style={scheduleBtn}
@@ -810,7 +987,7 @@ onClick={async () => {
     }
   );
 
-  alert("Verification saved");
+  setPopup({ message: "Verification saved", type: "success" });
 
   setVerifyApp(null);
 }}
@@ -881,7 +1058,12 @@ onClick={async () => {
                   background: "#dc3545",
                   color: "white"
                 }}
-                onClick={() => deleteCitizen(c._id)}
+                onClick={() =>
+  setDeleteConfirm({
+    id: c._id,
+    name: c.name
+  })
+}
               >
                 Delete
               </button>
@@ -990,6 +1172,12 @@ onClick={async () => {
 {viewCitizen && (
   <div style={overlay}>
     <div style={modal}>
+      <button
+  style={closeIconBtn}
+  onClick={() => setViewCitizen(null)}
+>
+  ×
+</button>
       <h3 style={{ marginBottom: 20 }}>Citizen Details</h3>
 
       <div style={detailsGrid}>
@@ -1017,6 +1205,12 @@ onClick={async () => {
 {viewApp && (
   <div style={overlay}>
     <div style={modal}>
+      <button
+  style={closeIconBtn}
+  onClick={() => setViewApp(null)}
+>
+  ×
+</button>
       <h3>Application Details</h3>
 
       {/* SHOW SUBMITTED DATA */}
@@ -1085,6 +1279,12 @@ onClick={async () => {
 {cameraOpen && (
   <div style={overlay}>
     <div style={modal}>
+      <button
+  style={closeIconBtn}
+  onClick={() => setCameraOpen(null)}
+>
+  ×
+</button>
       <h3>Capture Live Photo</h3>
 
       <video
@@ -1123,10 +1323,87 @@ onClick={async () => {
 )}
 
     </div>
+
+{deleteConfirm && (
+  <div style={overlay}>
+    <div style={{ ...modal, width: 400 }}>
+      <button
+        style={closeIconBtn}
+        onClick={() => setDeleteConfirm(null)}
+      >
+        ×
+      </button>
+
+      <h3 style={{ marginBottom: 15 }}>
+        Confirm Delete
+      </h3>
+
+      <p>
+        Are you sure you want to delete
+        <br />
+        <strong>{deleteConfirm.name}</strong> ?
+      </p>
+
+      <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
+        <button
+          style={{
+            ...scheduleBtn,
+            background: "#dc3545"
+          }}
+          onClick={() => deleteCitizen(deleteConfirm.id)}
+        >
+          Yes, Delete
+        </button>
+
+        <button
+          style={closeBtn}
+          onClick={() => setDeleteConfirm(null)}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+    {popup && (
+  <div style={popupOverlay}>
+    <div
+      style={{
+        ...popupBox,
+        borderLeft:
+          popup.type === "success"
+            ? "6px solid #4caf50"
+            : "6px solid #f44336"
+      }}
+    >
+      <button
+        style={popupClose}
+        onClick={() => setPopup(null)}
+      >
+        ×
+      </button>
+
+      <p
+        style={{
+          margin: 0,
+          color:
+            popup.type === "success"
+              ? "#2e7d32"
+              : "#c62828",
+          fontWeight: 600
+        }}
+      >
+        {popup.message}
+      </p>
+    </div>
+  </div>
+)}
       <Footer />
 </>
   );
 };
+
 
 export default OfficerDashboard;
 
@@ -1156,7 +1433,8 @@ const overlay = {
   background: "rgba(0,0,0,0.4)",
   display: "flex",
   justifyContent: "center",
-  alignItems: "center"
+  alignItems: "center",
+  color:"black"
 };
 
 const modal = {
@@ -1165,7 +1443,19 @@ const modal = {
   borderRadius: 12,
   width: "80%",
   maxHeight: "90vh",
-  overflow: "auto"
+  overflow: "auto",
+   position: "relative" as const  
+};
+const closeIconBtn = {
+  position: "absolute" as const,
+  top: 15,
+  right: 20,
+  fontSize: 22,
+  background: "transparent",
+  border: "none",
+  cursor: "pointer",
+  fontWeight: 700,
+  color:"black"
 };
 
 const viewBtn = {
@@ -1300,4 +1590,31 @@ const certificateBtn = {
   padding: "6px 12px",
   borderRadius: 6,
   cursor: "pointer"
+};
+
+const popupOverlay = {
+  position: "fixed" as const,
+  top: 20,
+  right: 20,
+  zIndex: 2000
+};
+
+const popupBox = {
+  background: "#fff",
+  padding: "15px 20px",
+  borderRadius: 10,
+  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+  minWidth: 250,
+  position: "relative" as const
+};
+
+const popupClose = {
+  position: "absolute" as const,
+  top: 8,
+  right: 10,
+  background: "transparent",
+  border: "none",
+  fontSize: 18,
+  cursor: "pointer",
+  fontWeight: 700
 };

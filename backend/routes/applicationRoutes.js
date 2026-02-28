@@ -3,7 +3,7 @@ const router = express.Router();
 
 const upload = require("../config/multer");
 const Application = require("../models/Application");
-
+const Certificate = require("../models/Certificate");
 const generateCPAN = () => {
   const date = new Date()
     .toISOString()
@@ -127,4 +127,49 @@ router.get("/applications/by-email/:email", async (req, res) => {
   }
 });
 
+// ============================================
+// GET ALL GENERATED DOCUMENTS BY CPAN
+// ============================================
+router.get("/documents/:cpan", async (req, res) => {
+  try {
+    const cpan = req.params.cpan?.trim();
+
+    if (!cpan) {
+      return res.status(400).json({
+        success: false,
+        message: "CPAN is required"
+      });
+    }
+
+    const certificate = await Certificate.findOne({ cpan });
+
+    if (!certificate) {
+      return res.status(404).json({
+        success: false,
+        message: "No documents found for this CPAN"
+      });
+    }
+
+    res.json({
+      success: true,
+      documents: {
+        certificateUrl: certificate.certificateUrl || null,
+        receiptUrl: certificate.receiptUrl || null,
+        goshvaraUrl: certificate.goshvaraUrl || null,
+        blockchainStatus: certificate.blockchainStatus || null,
+        registeredOnChain: certificate.registeredOnChain || false
+      }
+    });
+
+  } catch (err) {
+    console.error("Fetch documents error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error"
+    });
+  }
+});
+
 module.exports = router;
+
+

@@ -1,26 +1,27 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useLocation } from "react-router-dom";
+import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
-  const [loggedIn, setLoggedIn] = useState(false);
-const location = useLocation();
+  const location = useLocation();
 
-  // CHECK LOGIN STATUS
- useEffect(() => {
+
+const [loading, setLoading] = React.useState(false);
   const applicant = localStorage.getItem("applicant");
   const officer = localStorage.getItem("officer");
+  const loggedIn = !!(applicant || officer);
 
-  setLoggedIn(!!(applicant || officer));
-}, [location]);
+ const handleLogout = () => {
+  setLoading(true);
 
-  // LOGOUT FUNCTION
-  const handleLogout = () => {
+  setTimeout(() => {
     localStorage.removeItem("applicant");
     localStorage.removeItem("officer");
-    setLoggedIn(false);
     navigate("/");
-  };
+  }, 1200); // 1.2 second delay
+};
+
+  const isHomePage = location.pathname === "/";
 
   return (
     <div
@@ -34,7 +35,7 @@ const location = useLocation();
         width: "100%",
       }}
     >
-      {/* LEFT SIDE → HOME CLICK */}
+      {/* LEFT SIDE */}
       <div
         onClick={() => navigate("/")}
         style={{
@@ -47,9 +48,8 @@ const location = useLocation();
         <img
           src="/logo.png"
           alt="logo"
-          style={{ borderRadius: 8, height:"80px" }}
+          style={{ borderRadius: 8, height: "80px" }}
         />
-
         <div>
           <h3 style={{ margin: 0 }}>
             Ulhasnagar Municipal Corporation
@@ -60,12 +60,13 @@ const location = useLocation();
 
       {/* RIGHT BUTTONS */}
       <div style={{ display: "flex", gap: 15 }}>
-        {/* LOGIN / LOGOUT BUTTON */}
-        {loggedIn ? (
+        
+        {/* CLEAN CONDITIONAL RENDERING */}
+        {isHomePage ? (
           <button
-            onClick={handleLogout}
+            onClick={() => navigate("/login")}
             style={{
-              background: "#ff4d4f",
+              background: "#28c76f",
               border: "none",
               padding: "10px 18px",
               borderRadius: 20,
@@ -74,8 +75,29 @@ const location = useLocation();
               fontWeight: 500,
             }}
           >
-            Logout
+            Signup/Login
           </button>
+        ) : loggedIn ? (
+<button
+  onClick={handleLogout}
+  disabled={loading}
+  style={{
+    background: "#ff4d4f",
+    border: "none",
+    padding: "10px 18px",
+    borderRadius: 20,
+    color: "white",
+    cursor: loading ? "not-allowed" : "pointer",
+    fontWeight: 500,
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    opacity: loading ? 0.8 : 1,
+  }}
+>
+  {loading && <span className="loader" />}
+  {loading ? "Logging out..." : "Logout"}
+</button>
         ) : (
           <button
             onClick={() => navigate("/login")}
@@ -93,7 +115,7 @@ const location = useLocation();
           </button>
         )}
 
-        {/* VERIFY CERTIFICATE */}
+        {/* VERIFY */}
         <button
           onClick={() => navigate("/verify")}
           style={{
@@ -109,6 +131,23 @@ const location = useLocation();
           Verify Certificate
         </button>
       </div>
+      <style>
+{`
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loader {
+  width: 14px;
+  height: 14px;
+  border: 2px solid white;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+`}
+</style>
     </div>
   );
 };

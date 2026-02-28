@@ -4,6 +4,8 @@ const CertificateSchema = new mongoose.Schema({
   applicationId: mongoose.Schema.Types.ObjectId,
   cpan: String,
   certificateUrl: String,
+    receiptUrl: String,          // 🔥 ADD
+  goshvaraUrl: String,
   
   // Blockchain fields
   certificateId: String,

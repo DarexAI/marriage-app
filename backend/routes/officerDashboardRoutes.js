@@ -87,6 +87,36 @@ router.put("/update-application/:id", upload.any(), async (req, res) => {
 });
 
 
+// GET CERTIFICATE STATUS BY CPAN
+router.get("/certificate-status/:cpan", async (req, res) => {
+  try {
+    const cert = await Certificate.findOne({
+      cpan: req.params.cpan
+    });
+
+    if (!cert) {
+      return res.json({
+        exists: false,
+        blockchainReady: false
+      });
+    }
+
+    const blockchainReady =
+      cert.certificateHash &&
+      cert.blockchainStatus === "confirmed";
+
+    res.json({
+      exists: true,
+      blockchainReady,
+      blockchainStatus: cert.blockchainStatus,
+      certificateHash: cert.certificateHash
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+});
+
 router.get("/generate-certificate/:id", async (req, res) => {
   try {
     const verification = await PhysicalVerification.findOne({
@@ -99,6 +129,17 @@ router.get("/generate-certificate/:id", async (req, res) => {
     if (!verification) {
       return res.status(404).json({ success: false });
     }
+    // 🔒 BLOCKCHAIN SECURITY CHECK
+const existingCert = await Certificate.findOne({
+  cpan: verification.cpan
+});
+
+if (!existingCert || existingCert.blockchainStatus !== "confirmed") {
+  return res.status(403).json({
+    success: false,
+    message: "Certificate not confirmed on blockchain"
+  });
+}
 
     const app = verification.applicationId;
     const form = app.formData || {};
@@ -842,7 +883,18 @@ await drawMainTable(doc, form, docs, verification, 2);
         async (err, result) => {
           if (err)
             return res.status(500).json({ success: false });
+  const cert = await Certificate.findOne({ cpan: verification.cpan });
 
+      if (cert) {
+        cert.goshvaraUrl = result.secure_url;
+        await cert.save();
+      } else {
+        await Certificate.create({
+          applicationId: app._id,
+          cpan: verification.cpan,
+          goshvaraUrl: result.secure_url
+        });
+      }
           res.json({
             success: true,
             url: result.secure_url

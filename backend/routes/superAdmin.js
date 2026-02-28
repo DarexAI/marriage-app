@@ -185,19 +185,25 @@ router.get("/applications", protect, async (req, res) => {
 // =====================================================
 router.get("/applications/:id", protect, async (req, res) => {
   try {
-    const app = await PhysicalVerification.findById(req.params.id)
-       .populate({
+    const verification = await PhysicalVerification.findById(req.params.id)
+      .populate({
         path: "applicationId",
         model: "applications"
       });
 
-    if (!app) {
+    if (!verification) {
       return res.json({ success: false });
     }
 
+    // 🔥 Attach certificate
+    const cert = await Certificate.findOne({ cpan: verification.cpan });
+
     res.json({
       success: true,
-      app
+      app: {
+        ...verification.toObject(),
+        certificate: cert || null
+      }
     });
 
   } catch (err) {
@@ -456,10 +462,10 @@ const uploadStream = cloudinary.uploader.upload_stream(
       certificateUrl: result.secure_url
     });
 
-    res.json({
-      success: true,
-      url: result.secure_url
-    });
+res.json({
+  success: true,
+  message: "Certificate generated and stored"
+});
   }
 );
 
@@ -742,6 +748,18 @@ drawReceipt("Main Copy");
         async (error, result) => {
           if (error)
             return res.status(500).json({ success: false });
+     let certificate = await Certificate.findOne({ cpan: verification.cpan });
+
+      if (certificate) {
+        certificate.receiptUrl = result.secure_url;
+        await certificate.save();
+      } else {
+        certificate = await Certificate.create({
+          applicationId: app._id,
+          cpan: verification.cpan,
+          receiptUrl: result.secure_url
+        });
+      }
 
           res.json({
             success: true,
@@ -958,7 +976,19 @@ await drawMainTable(doc, form, docs, verification, 2);
         async (err, result) => {
           if (err)
             return res.status(500).json({ success: false });
+      // 🔥 STORE OR UPDATE IN CERTIFICATE COLLECTION
+      let certificate = await Certificate.findOne({ cpan: verification.cpan });
 
+      if (certificate) {
+        certificate.goshvaraUrl = result.secure_url;
+        await certificate.save();
+      } else {
+        certificate = await Certificate.create({
+          applicationId: app._id,
+          cpan: verification.cpan,
+          goshvaraUrl: result.secure_url
+        });
+      }
           res.json({
             success: true,
             url: result.secure_url
@@ -1057,35 +1087,347 @@ router.post("/blockchain/register", async (req, res) => {
     }
 
     // update certificate with blockchain data
-    certificate.certificateId = certId;
-    certificate.txSignature = result.txSignature;
-    certificate.certificateHash = result.certificateHash;
-    certificate.blockchainStatus = "confirmed";
-    certificate.registeredOnChain = true;
-    await certificate.save();
+   // ============================
+// Update Mongo First
+// ============================
 
-    console.log(`Certificate ${certId} registered successfully`);
+certificate.certificateId = certId;
+certificate.txSignature = result.txSignature;
+certificate.certificateHash = result.certificateHash;
+certificate.blockchainStatus = "confirmed";
+certificate.registeredOnChain = true;
+await certificate.save();
 
-    res.json({
-      success: true,
-      message: "Certificate registered on blockchain successfully",
-      data: {
-        certificateId: certId,
-        txSignature: result.txSignature,
-        certificateHash: result.certificateHash,
-        recordPDA: result.recordPDA,
-        blockchainStatus: "confirmed"
+console.log(`Certificate ${certId} registered successfully`);
+
+// ============================
+// REGENERATE CERTIFICATE WITH GREEN BLOCK
+// ============================
+
+const verification = await PhysicalVerification.findOne({ cpan })
+.populate({
+  path: "applicationId",
+  model: "applications"
+});
+if (!verification) {
+  return res.status(404).json({ success: false });
+}
+
+const app = verification.applicationId;
+const form = app.formData || {};
+const docs = app.documents || {};
+
+
+const groomNameEnglish =
+  `${form["groom_FirstName"] || ""} ${form["groom_LastName"] || ""}`;
+
+const groomNameMarathi =
+  `${form["groom_FirstName(Marathi)"] || ""} ${form["groom_LastName(Marathi)"] || ""}`;
+
+const brideNameEnglish =
+  `${form["bride_FirstName"] || ""} ${form["bride_LastName"] || ""}`;
+
+const brideNameMarathi =
+  `${form["bride_FirstName(Marathi)"] || ""} ${form["bride_LastName(Marathi)"] || ""}`;
+
+const groomAddressEnglish =
+  form["groom_CompleteAddressinEnglish"] || "N/A";
+
+const groomAddressMarathi =
+  form["groom_CompleteAddressinMarathi"] || "N/A";
+
+const brideAddressEnglish =
+  form["bride_CompleteAddressinEnglish"] || "N/A";
+
+const brideAddressMarathi =
+  form["bride_CompleteAddressinMarathi"] || "N/A";
+
+const marriageDate =
+  form["marriage_MarriageDate"] || "N/A";
+
+const marriagePlace =
+  form["marriage_PlaceofMarriage"] || "N/A";
+
+const appDate = new Date(app.createdAt).toLocaleDateString();
+
+const doc = new PDFDocument({ size: "A4", margin: 40 });
+const buffers = [];
+doc.on("data", buffers.push.bind(buffers));
+
+
+/* =============================
+   COPY YOUR ORIGINAL CERTIFICATE BODY HERE
+   (everything same as generate-certificate)
+   until the SEAL section
+============================= */
+
+const pageWidth = doc.page.width;
+const contentWidth = pageWidth - 100; // safe margin width
+    
+
+    /* ===== LOAD MARATHI FONT ===== */
+    doc.registerFont(
+      "marathi",
+      path.join(__dirname, "../fonts/NotoSansDevanagari-Regular.ttf")
+    );
+
+    /* ===== TIMESTAMP TOP ===== */
+    const now = new Date().toLocaleString();
+    doc.fontSize(8).text(now, { align: "right" });
+
+    /* ===== BORDER ===== */
+    doc.rect(20, 30, 555, 760).lineWidth(2).stroke();
+
+    /* ===== LOGOS ===== */
+    const logo = path.join(__dirname, "../assets/logo.png");
+
+    try {
+      doc.image(logo, 40, 60, { width: 50 });
+      doc.image(logo, 500, 60, { width: 50 });
+    } catch (e) {
+      console.log("Logo missing");
+    }
+
+    /* ===== HEADER ===== */
+const headerImage = path.join(
+  __dirname,
+  "../assets/header.png"
+);
+
+// Full width header
+doc.image(headerImage, 40, 40, {
+  width: doc.page.width - 80
+});
+
+// Move cursor below header
+doc.moveDown(22);
+/* ===== HUSBAND DETAILS ===== */
+/* ===== CERTIFICATE BODY (MATCH OFFICIAL PDF STYLE) ===== */
+
+doc.moveDown(2);
+
+// CERTIFICATION LINE
+doc.font("marathi").fontSize(12)
+.text(
+  "प्रमाणित करण्यात येते की / Certified that, Marriage between",
+  { align: "center" }
+);
+
+doc.moveDown(1);
+
+/* ===== HUSBAND DETAILS ===== */
+doc.font("marathi").fontSize(12)
+.text(
+  `पतीचे नाव : ${groomNameMarathi}          आधार क्रमांक /Aadhar No.: ${
+    form["groom_AadhaarNumber"] || "N/A"
+  }`
+);
+
+doc.font("Helvetica")
+.text(`Name of Husband : ${groomNameEnglish}`);
+
+doc.font("marathi")
+.text(`राहणार : ${groomAddressMarathi}`);
+
+doc.font("Helvetica")
+.text(`residing at : ${groomAddressEnglish}`);
+
+/* ===== WIFE DETAILS ===== */
+doc.moveDown(1);
+
+doc.font("marathi")
+.text(
+  `पत्नीचे नाव : ${brideNameMarathi}          आधार क्रमांक /Aadhar No.: ${
+    form["bride_AadhaarNumber"] || "N/A"
+  }`
+);
+
+doc.font("Helvetica")
+.text(`Wife's name : ${brideNameEnglish}`);
+
+doc.font("marathi")
+.text(`राहणार : ${brideAddressMarathi}`);
+
+doc.font("Helvetica")
+.text(`residing at : ${brideAddressEnglish}`);
+
+/* ===== MARRIAGE PARAGRAPH ===== */
+doc.moveDown(1);
+
+doc.font("marathi").fontSize(12)
+.text(
+`यांचा विवाह दिनांक ${marriageDate} रोजी ${marriagePlace} येथे (ठिकाणी) विवाह विधी संपन्न झाला. त्याची महाराष्ट्र विवाह नोंदणी विधेयक १९९८ अन्वये CPAN ${cpan} वर दिनांक ${appDate} रोजी माझ्याकडून नोंदणी करण्यात आली आहे.`,
+{
+  align: "justify",
+  width: doc.page.width - 80
+}
+);
+
+doc.moveDown();
+
+doc.font("Helvetica").fontSize(11)
+.text(
+`Solemnized on Date : ${marriageDate} at ${marriagePlace} (Place) is registered by me on Date : ${appDate} at CPAN : ${cpan} of register of Marriages maintained under the Maharashtra Regulation of Marriage Bureaus and Registrationof Marriages Act 1998.`,
+{
+  align: "justify",
+  width: doc.page.width - 80
+}
+);
+    /* ===== PHOTOS FROM APPLICATION DOCUMENTS ===== */
+
+doc.moveDown(1);
+const imageY = doc.y + 5;
+
+if (docs["groom_Photograph"]) {
+  const g = await axios.get(docs["groom_Photograph"], {
+    responseType: "arraybuffer"
+  });
+
+  doc.image(g.data, 100, imageY, {
+    fit: [90, 110],
+    align: "center"
+  });
+}
+
+if (docs["bride_Photograph"]) {
+  const b = await axios.get(docs["bride_Photograph"], {
+    responseType: "arraybuffer"
+  });
+
+  doc.image(b.data, 420, imageY, {
+    fit: [90, 110],
+    align: "center"
+  });
+}
+    /* ===== FOOTER ===== */
+const footerY = 720;
+
+// LEFT
+doc.font("Helvetica-Bold")
+  .text("Place : ULHASNAGAR", 50, footerY);
+
+doc.text("Date : ", 50, footerY + 15, { continued: true });
+
+doc.font("Helvetica-Bold")
+  .text(new Date().toDateString());
+
+// CENTER SEAL
+doc.circle(300, footerY + 15, 28).stroke();
+doc.fontSize(10).text("Seal", 285, footerY + 10);
+
+// RIGHT SIGNATURE
+doc.font("Helvetica-Bold")
+  .text("Signature", 490, footerY);
+
+doc.text("Registrar of Marriages", 440, footerY + 15);
+doc.text("ULHASNAGAR-3", 460, footerY + 30);
+
+// --- AFTER SEAL ---
+// ============================
+// PAGE 2 – 3 LINE VERIFICATION BOX
+// ============================
+
+doc.addPage();
+
+// Border for page 2
+doc.rect(20, 30, 555, 760).lineWidth(2).stroke();
+
+const boxWidth = 520;
+const boxHeight = 65;   // slightly taller for 3 lines
+const boxX = 40;
+const boxY = 60;
+
+// Background
+doc.rect(boxX, boxY, boxWidth, boxHeight)
+   .fillColor("#e6f4ea")
+   .fill();
+
+// Border
+doc.rect(boxX, boxY, boxWidth, boxHeight)
+   .lineWidth(1)
+   .strokeColor("#28a745")
+   .stroke();
+
+doc.fillColor("#155724");
+
+// 🔹 Line 1 — Verification Title
+doc.font("Helvetica-Bold")
+   .fontSize(11)
+   .text("Verified on Blockchain", boxX + 12, boxY + 8);
+
+// 🔹 Line 2 — CPAN + Certificate ID
+doc.font("Helvetica")
+   .fontSize(9)
+   .text(
+     `CPAN: ${cpan}    |    Certificate ID: ${certId}`,
+     boxX + 12,
+     boxY + 25
+   );
+
+// Shorten long values for clean formatting
+const shortHash = result.certificateHash.slice(0, 22) + "...";
+const shortTx = result.txSignature.slice(0, 22) + "...";
+
+// 🔹 Line 3 — Hash + TX
+doc.fontSize(8)
+   .text(
+     `Hash: ${shortHash}    |    TX: ${shortTx}`,
+     boxX + 12,
+     boxY + 42,
+     { width: boxWidth - 24 }
+   );
+
+doc.on("end", async () => {
+  try {
+    const pdfBuffer = Buffer.concat(buffers);
+
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: "marriage_certificates",
+        resource_type: "raw",
+        format: "pdf",
+        public_id: `certificate-blockchain-${cpan}`
+      },
+      async (error, uploadResult) => {
+        if (error) {
+          return res.status(500).json({ success: false });
+        }
+
+        certificate.certificateUrl = uploadResult.secure_url;
+        await certificate.save();
+
+        return res.json({
+          success: true,
+          message: "Certificate registered and blockchain-stamped successfully",
+          data: {
+            certificateId: certId,
+            txSignature: result.txSignature,
+            certificateHash: result.certificateHash,
+            blockchainStatus: "confirmed"
+          }
+        });
       }
-    });
+    );
 
-  } catch (error) {
-    console.error("Blockchain route error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message
-    });
+    streamifier.createReadStream(pdfBuffer).pipe(uploadStream);
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false });
   }
+});
+
+// MUST be after doc.on
+doc.end();
+
+} catch (error) {
+  console.error("Blockchain route error:", error);
+  return res.status(500).json({
+    success: false,
+    message: "Internal server error",
+    error: error.message
+  });
+}
 });
 
 /**
@@ -1181,6 +1523,111 @@ router.get("/blockchain/status", async (req, res) => {
         error: error.message
       }
     });
+  }
+});
+
+
+// ============================================
+// TEST BLOCKCHAIN PDF (NO DB, NO BLOCKCHAIN)
+// ============================================
+
+router.get("/test-blockchain-pdf", async (req, res) => {
+  try {
+    const PDFDocument = require("pdfkit");
+    const path = require("path");
+const cpan = "CPAN-TEST-123456";
+const certId = "CERT-2025-28963133";
+const result = {
+  txSignature: "0x75301ba52f8e2c75e8..."
+};
+    const doc = new PDFDocument({ size: "A4", margin: 40 });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "inline; filename=test.pdf");
+
+    doc.pipe(res);
+
+    // Border
+    doc.rect(20, 30, 555, 760).lineWidth(2).stroke();
+
+    // Header
+    doc.fontSize(18).text("Marriage Certificate (TEST MODE)", {
+      align: "center"
+    });
+
+    doc.moveDown(2);
+
+    doc.fontSize(12).text("This is a UI test certificate only.");
+    doc.moveDown(1);
+
+    doc.text("You can modify layout safely here.");
+    doc.moveDown(5);
+
+    // Fake footer
+    const footerY = 720;
+
+    doc.font("Helvetica-Bold")
+      .text("Place : ULHASNAGAR", 50, footerY);
+
+    doc.text("Date : ", 50, footerY + 15, { continued: true });
+    doc.font("Helvetica-Bold")
+      .text(new Date().toDateString());
+
+    doc.circle(300, footerY + 15, 28).stroke();
+    doc.text("Seal", 285, footerY + 10);
+
+    doc.font("Helvetica-Bold")
+      .text("Signature", 490, footerY);
+
+    doc.text("Registrar of Marriages", 440, footerY + 15);
+    doc.text("ULHASNAGAR-3", 460, footerY + 30);
+
+    // -------- GREEN BLOCK (TEST ONLY) --------
+// ============================
+// BLOCKCHAIN PAGE (PAGE 2)
+// ============================
+doc.addPage();
+
+// Optional border (keep if you want)
+doc.rect(20, 30, 555, 760).lineWidth(2).stroke();
+
+// SMALL COMPACT GREEN VERIFICATION BOX
+
+const boxWidth = 520;
+const boxHeight = 40;   // very small
+const boxX = 40;
+const boxY = 60;        // top of page
+
+doc
+  .rect(boxX, boxY, boxWidth, boxHeight)
+  .fillColor("#e6f4ea")
+  .fill();
+
+doc
+  .rect(boxX, boxY, boxWidth, boxHeight)
+  .lineWidth(1)
+  .strokeColor("#28a745")
+  .stroke();
+
+doc.fillColor("#155724");
+
+// First line (bold style)
+doc.font("Helvetica-Bold").fontSize(10)
+  .text("Verified on BSC Blockchain", boxX + 10, boxY + 8);
+
+// Second compact line
+doc.font("Helvetica").fontSize(8)
+  .text(
+    `Cert No: ${certId}  |  CPAN: ${cpan}  |  TX: ${result.txSignature}`,
+    boxX + 10,
+    boxY + 22,
+    { width: boxWidth - 20 }
+  );
+    doc.end();
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
   }
 });
 

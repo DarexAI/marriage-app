@@ -5,15 +5,19 @@ import Footer from "../components/Footer";
 const SuperAdminDashboard = () => {
   const [tab, setTab] = useState("overview");
   const [userTab, setUserTab] = useState("officers");
-
+const [toast, setToast] = useState<{
+  message: string;
+  type: "success" | "error";
+} | null>(null);
 const [reviewApp, setReviewApp] = useState<any>(null);
   const [overview, setOverview] = useState<any>({});
   const [officers, setOfficers] = useState<any[]>([]);
   const [citizens, setCitizens] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
 const [showAddOfficer, setShowAddOfficer] = useState(false);
+const [issuingId, setIssuingId] = useState<string | null>(null);
 const [editOfficer, setEditOfficer] = useState<any>(null);
-
+const [approvingId, setApprovingId] = useState<string | null>(null);
 const [officerForm, setOfficerForm] = useState({
   name: "",
   email: "",
@@ -39,6 +43,14 @@ const [officerForm, setOfficerForm] = useState({
     const data = await res.json();
     setOfficers(data.officers);
   };
+
+  const showToast = (message: string, type: "success" | "error") => {
+  setToast({ message, type });
+
+  setTimeout(() => {
+    setToast(null);
+  }, 3000);
+};
 
   const loadCitizens = async () => {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/citizens`, {
@@ -413,47 +425,27 @@ const handleReview = async (verificationId: string) => {
   Review
 </button>
 
- <button
-  style={certificateBtn}
-  onClick={async () => {
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/admin/generate-certificate/${app._id}`,
-        {
-          headers: {
-            Authorization: token || ""
-          }
-        }
-      );
 
-      const data = await res.json();
-
-      if (data.success) {
-        // open Cloudinary PDF URL
-        window.open(data.url, "_blank");
-      } else {
-        alert("Failed to generate certificate");
-      }
-
-    } catch (err) {
-      console.log("Certificate error:", err);
-      alert("Something went wrong");
-    }
-  }}
->
-  Generate
-</button>
 
 <button
-  disabled={app.certificate?.registeredOnChain}
   style={{
     ...blockchainBtn,
-    opacity: app.certificate?.registeredOnChain ? 0.5 : 1,
-    cursor: app.certificate?.registeredOnChain ? "not-allowed" : "pointer"
+    background: app.certificate?.registeredOnChain
+      ? "#28a745"
+      : "#6f42c1"
   }}
   onClick={async () => {
-    if (app.certificate?.registeredOnChain) return;
+    // ✅ If already registered → just open certificate
+    if (app.certificate?.registeredOnChain) {
+      if (app.certificate?.certificateUrl) {
+        window.open(app.certificate.certificateUrl, "_blank");
+      } else {
+        alert("Certificate URL not found");
+      }
+      return;
+    }
 
+    // 🔥 Otherwise register on blockchain
     try {
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/admin/blockchain/register`,
@@ -472,21 +464,21 @@ const handleReview = async (verificationId: string) => {
       const data = await res.json();
 
       if (data.success) {
-        alert("Blockchain registration successful");
-        loadApplications();
+        await loadApplications(); // refresh list
+        showToast("Blockchain registration successful", "success");
       } else {
-        alert(data.message || "Blockchain failed");
+        showToast(data.message || "Blockchain failed", "error");
       }
 
     } catch (err) {
       console.log(err);
-      alert("Blockchain error");
+      showToast("Blockchain error occurred", "error");
     }
   }}
 >
   {app.certificate?.registeredOnChain
-    ? "Registered"
-    : "Blockchain"}
+    ? "View Certificate"
+    : "Generate Certificate"}
 </button>
 
 <button
@@ -505,12 +497,12 @@ const handleReview = async (verificationId: string) => {
       if (data.success) {
         window.open(data.url, "_blank");
       } else {
-        alert("Failed to generate receipt");
+        showToast("Failed to generate receipt", "error");
       }
 
     } catch (err) {
       console.log(err);
-      alert("Receipt generation error");
+      showToast("Receipt generation error", "error");
     }
   }}
 >
@@ -518,33 +510,40 @@ const handleReview = async (verificationId: string) => {
 </button>
 
 <button
-  style={certificateBtn}
+  disabled={
+    !app.certificate?.registeredOnChain ||
+    app.certificate?.blockchainStatus !== "confirmed"
+  }
+  style={{
+    ...certificateBtn,
+    opacity:
+      app.certificate?.registeredOnChain &&
+      app.certificate?.blockchainStatus === "confirmed"
+        ? 1
+        : 0.5,
+    cursor:
+      app.certificate?.registeredOnChain &&
+      app.certificate?.blockchainStatus === "confirmed"
+        ? "pointer"
+        : "not-allowed"
+  }}
   onClick={async () => {
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/admin/generate-goshvara/${app._id}`,
-        {
-          headers: {
-            Authorization: token || ""
-          }
-        }
-      );
+    if (
+      !app.certificate?.registeredOnChain ||
+      app.certificate?.blockchainStatus !== "confirmed"
+    )
+      return;
 
-      const data = await res.json();
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/admin/generate-goshvara/${app._id}`,
+      { headers: { Authorization: token || "" } }
+    );
 
-      if (data.success) {
-        window.open(data.url, "_blank");
-      } else {
-        alert("Failed to generate Goshvara");
-      }
-
-    } catch (err) {
-      console.log("Goshvara error:", err);
-      alert("Something went wrong");
-    }
+    const data = await res.json();
+    if (data.success) window.open(data.url, "_blank");
   }}
 >
-  Goshvara
+  {app.certificate?.registeredOnChain ? "Goshvara" : "Goshvara 🔒"}
 </button>
             </td>
           </tr>
@@ -556,6 +555,7 @@ const handleReview = async (verificationId: string) => {
           </div>
         )}
       </div>
+      
 {reviewApp && (
   <div style={overlay}>
     <div style={reviewModal}>
@@ -658,16 +658,101 @@ const handleReview = async (verificationId: string) => {
         </div>
       </div>
 
-      <button
-        style={primaryBtn}
-        onClick={() => setReviewApp(null)}
-      >
-        Close
-      </button>
+<div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
+
+  <button
+    style={headerBtn}
+    onClick={() => setReviewApp(null)}
+  >
+    Close
+  </button>
+
+<button
+  disabled={
+    !!reviewApp?.certificate ||
+    issuingId === reviewApp?._id
+  }
+  style={{
+    ...primaryBtn,
+    background: reviewApp?.certificate
+      ? "#28a745"
+      : "#3b6edc",
+    opacity: reviewApp?.certificate ? 0.6 : 1,
+    cursor:
+      reviewApp?.certificate ||
+      issuingId === reviewApp?._id
+        ? "not-allowed"
+        : "pointer",
+    minWidth: 180
+  }}
+  onClick={async () => {
+    if (reviewApp?.certificate) return;
+
+    try {
+      setIssuingId(reviewApp._id);
+
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/admin/generate-certificate/${reviewApp._id}`,
+        {
+          headers: { Authorization: token || "" }
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+    await loadApplications();
+
+// 🔥 Fetch updated single application from backend
+const updatedRes = await fetch(
+  `${import.meta.env.VITE_API_URL}/admin/applications/${reviewApp._id}`,
+  {
+    headers: { Authorization: token || "" }
+  }
+);
+
+const updatedData = await updatedRes.json();
+
+if (updatedData.success) {
+  setReviewApp(updatedData.app);
+}
+      } else {
+        showToast("Approval failed", "error");
+      }
+
+    } catch (err) {
+      console.log(err);
+      showToast("Approval error occurred", "error");
+    } finally {
+      setIssuingId(null);
+    }
+  }}
+>
+  {issuingId === reviewApp?._id
+    ? "Issuing..."
+    : reviewApp?.certificate
+    ? "Approved ✓"
+    : "Approve Through Blockchain"}
+</button>
+
+</div>
     </div>
   </div>
 )}
-
+{issuingId && (
+  <div style={loaderOverlay}>
+    <div style={loaderBox}>
+      <img
+        src="/bit.gif"
+        alt="loading"
+        style={{ width: 240, height: 240 }}
+      />
+      <p style={{ marginTop: 20, fontSize: 18, fontWeight: 600 }}>
+        Generating Certificate...
+      </p>
+    </div>
+  </div>
+)}
       {showAddOfficer && (
   <div style={overlay}>
     <div style={modal}>
@@ -734,6 +819,28 @@ const handleReview = async (verificationId: string) => {
         Cancel
       </button>
     </div>
+  </div>
+)}
+{toast && (
+  <div
+    style={{
+      position: "fixed",
+      top: 20,
+      right: 20,
+      padding: "12px 20px",
+      borderRadius: 10,
+      color: "#fff",
+      fontWeight: 600,
+      boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+      background:
+        toast.type === "success"
+          ? "#28a745"
+          : "#dc3545",
+      zIndex: 99999,
+      animation: "slideIn 0.3s ease"
+    }}
+  >
+    {toast.message}
   </div>
 )}
 
@@ -1041,4 +1148,26 @@ const blockchainBtn = {
   marginRight: 8,
    marginLeft: 8,
   cursor: "pointer",
+};
+
+const loaderOverlay = {
+  position: "fixed" as const,
+  top: 0,
+  left: 0,
+  width: "100%",
+  height: "100%",
+  background: "transparent",   // no dark overlay
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  zIndex: 9999,
+  pointerEvents: "none"        // optional (prevents blocking clicks)
+};
+
+const loaderBox = {
+  background: "transparent",   // 🔥 THIS removes white background
+  padding: 0,                  // remove padding if you want only GIF
+  borderRadius: 0,
+  boxShadow: "none",
+  textAlign: "center" as const
 };

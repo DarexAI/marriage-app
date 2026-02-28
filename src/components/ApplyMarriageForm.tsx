@@ -4,7 +4,10 @@ const ApplyMarriageForm = () => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<any>({});
 
-  const next = () => step < 6 && setStep(step + 1);
+ const next = () => {
+  if (!validateStep(step)) return;
+  if (step < 6) setStep(step + 1);
+};
   const prev = () => step > 1 && setStep(step - 1);
 const [showSuccess, setShowSuccess] = useState(false);
 const [cpan, setCpan] = useState("");
@@ -117,6 +120,124 @@ const validateForm = () => {
   if (missing.length > 0) {
     console.log("Missing Fields:", missing);
     alert("Please fill all mandatory fields before submitting.");
+    return false;
+  }
+
+  return true;
+};
+
+const stepRequiredFields: any = {
+  1: [
+    // Groom
+    "groom_FirstName",
+    "groom_LastName",
+    "groom_FirstName(Marathi)",
+    "groom_LastName(Marathi)",
+    "groom_Father'sName",
+    "groom_DateofBirth",
+    "groom_AgeatMarriage",
+    "groom_Gender",
+    "groom_Occupation",
+    "groom_Religion",
+    "groom_AadhaarNumber",
+    "groom_CompleteAddressinEnglish",
+    "groom_CompleteAddressinMarathi",
+    "groom_Photograph",
+    "groom_Aadhaar",
+    "groom_AgeProofType",
+    "groom_ProofofAge",
+    "groom_ResidenceProofType",
+    "groom_ProofofResidence",
+  ],
+
+  2: [
+    // Bride
+    "bride_FirstName",
+    "bride_LastName",
+    "bride_FirstName(Marathi)",
+    "bride_LastName(Marathi)",
+    "bride_Father'sName",
+    "bride_DateofBirth",
+    "bride_AgeatMarriage",
+    "bride_Gender",
+    "bride_Occupation",
+    "bride_Religion",
+    "bride_AadhaarNumber",
+    "bride_CompleteAddressinEnglish",
+    "bride_CompleteAddressinMarathi",
+    "bride_Photograph",
+    "bride_Aadhaar",
+    "bride_AgeProofType",
+    "bride_ProofofAge",
+    "bride_ResidenceProofType",
+    "bride_ProofofResidence",
+  ],
+
+  3: [
+    "marriage_MarriageDate",
+    "marriage_PlaceofMarriage",
+    "marriage_MarriageType",
+    "marriage_Ward/Zone",
+    "priest_Priest/RegistrarName",
+    "priest_PriestAadhaarNumber",
+    "priest_PriestAddress",
+    "marriageDoc_WeddingCard/Invitation",
+    "marriageDoc_PriestSignature/Certificate",
+    "marriageDoc_MarriageAffidavit",
+    "marriageDoc_WeddingPhoto",
+  ],
+
+  4: [
+    "witness1_Witness1FullName",
+    "witness1_Witness1MobileNumber",
+    "witness1_Witness1AadhaarNumber",
+    "witness1_RelationtoBride/Groom",
+    "witness1_CompleteAddress",
+    "witness1_IDProofType",
+    "witness1_IDProof",
+    "witness1_Witness1Photo",
+  ],
+
+  5: [
+    "witness2_Witness2FullName",
+    "witness2_Witness2MobileNumber",
+    "witness2_Witness2AadhaarNumber",
+    "witness2_RelationtoBride/Groom",
+    "witness2_CompleteAddress",
+    "witness2_IDProofType",
+    "witness2_IDProof",
+    "witness2_Witness2Photo",
+  ],
+
+  6: [
+    "witness3_Witness3FullName",
+    "witness3_Witness3MobileNumber",
+    "witness3_Witness3AadhaarNumber",
+    "witness3_RelationtoBride/Groom",
+    "witness3_CompleteAddress",
+    "witness3_IDProofType",
+    "witness3_IDProof",
+    "witness3_Witness3Photo",
+  ],
+};
+const validateStep = (currentStep: number) => {
+  const requiredFields = stepRequiredFields[currentStep] || [];
+  const missing: string[] = [];
+
+  requiredFields.forEach((field: string) => {
+    const value = formData[field];
+
+    if (value instanceof File) {
+      if (!value) missing.push(field);
+    } else {
+      if (!value || value.toString().trim() === "") {
+        missing.push(field);
+      }
+    }
+  });
+
+  if (missing.length > 0) {
+    alert("Please fill all mandatory fields before proceeding.");
     return false;
   }
 
