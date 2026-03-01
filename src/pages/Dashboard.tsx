@@ -277,7 +277,9 @@ cursor: selectedSlot ? "not-allowed" : "pointer",
   )}
 </div>
 {/* SELECTED SLOT DISPLAY */}
-{selectedSlot && (
+{selectedSlot &&
+ appStatus !== "physical_verification_completed" &&
+ appStatus !== "approved" && (
   <div
     style={{
       background: "#fff",
@@ -448,43 +450,140 @@ cursor: selectedSlot ? "not-allowed" : "pointer",
           {new Date(application.createdAt).toLocaleDateString()}
         </p>
 
-<h4>Application Details</h4>
+<h4 style={{ marginTop: 20 }}>Application Details</h4>
 
-<div style={{ marginTop: 10 }}>
-{Object.entries(application.formData || {})
-  .filter(([key]) => key !== "userId")
-  .map(([key, value]) => (
-    <p key={key}>
-      <strong>
-        {key.replace(/_/g, " ").replace("*", "")}:
-      </strong>{" "}
-      {String(value)}
-    </p>
-  ))}
+{/* GROOM SECTION */}
+<SectionCard title="Groom Details">
+  <Field label="Full Name"
+    value={`${application.formData.groom_FirstName} ${application.formData.groom_MiddleName} ${application.formData.groom_LastName}`} />
+  <Field label="Date of Birth" value={application.formData.groom_DateofBirth} />
+  <Field label="Age at Marriage" value={application.formData.groom_AgeatMarriage} />
+  <Field label="Occupation" value={application.formData.groom_Occupation} />
+  <Field label="Religion" value={application.formData.groom_Religion} />
+  <Field label="PAN Number" value={application.formData.groom_PANNumber} />
+  <Field label="Aadhaar Number" value={application.formData.groom_AadhaarNumber} />
+  <Field label="Address" value={application.formData.groom_CompleteAddressinEnglish} full />
+</SectionCard>
 
-</div>
+{/* BRIDE SECTION */}
+<SectionCard title="Bride Details">
+  <Field label="Full Name"
+    value={`${application.formData.bride_FirstName} ${application.formData.bride_MiddleName} ${application.formData.bride_LastName}`} />
+  <Field label="Date of Birth" value={application.formData.bride_DateofBirth} />
+  <Field label="Age at Marriage" value={application.formData.bride_AgeatMarriage} />
+  <Field label="Occupation" value={application.formData.bride_Occupation} />
+  <Field label="Religion" value={application.formData.bride_Religion} />
+  <Field label="PAN Number" value={application.formData.bride_PANNumber} />
+  <Field label="Aadhaar Number" value={application.formData.bride_AadhaarNumber} />
+  <Field label="Address" value={application.formData.bride_CompleteAddressinEnglish} full />
+</SectionCard>
+
+{/* MARRIAGE DETAILS */}
+<SectionCard title="Marriage Details">
+  <Field label="Marriage Date" value={application.formData.marriage_MarriageDate} />
+  <Field label="Place of Marriage" value={application.formData.marriage_PlaceofMarriage} />
+  <Field label="Marriage Type" value={application.formData.marriage_MarriageType} />
+  <Field label="Ward / Zone" value={application.formData["marriage_Ward/Zone"]} />
+</SectionCard>
+
+<SectionCard title="Witness 1 Details">
+  <Field label="Full Name" value={application.formData.witness1_Witness1FullName} />
+  <Field label="Mobile Number" value={application.formData.witness1_Witness1MobileNumber} />
+  <Field label="Aadhaar Number" value={application.formData.witness1_Witness1AadhaarNumber} />
+  <Field label="Relation" value={application.formData["witness1_RelationtoBride/Groom"]} />
+  <Field label="ID Proof Type" value={application.formData.witness1_IDProofType} />
+  <Field label="Address" value={application.formData.witness1_CompleteAddress} full />
+</SectionCard>
+
+<SectionCard title="Witness 2 Details">
+  <Field label="Full Name" value={application.formData.witness2_Witness2FullName} />
+  <Field label="Mobile Number" value={application.formData.witness2_Witness2MobileNumber} />
+  <Field label="Aadhaar Number" value={application.formData.witness2_Witness2AadhaarNumber} />
+  <Field label="Relation" value={application.formData["witness2_RelationtoBride/Groom"]} />
+  <Field label="ID Proof Type" value={application.formData.witness2_IDProofType} />
+  <Field label="Address" value={application.formData.witness2_CompleteAddress} full />
+</SectionCard>
+
+<SectionCard title="Witness 3 Details">
+  <Field label="Full Name" value={application.formData.witness3_Witness3FullName} />
+  <Field label="Mobile Number" value={application.formData.witness3_Witness3MobileNumber} />
+  <Field label="Aadhaar Number" value={application.formData.witness3_Witness3AadhaarNumber} />
+  <Field label="Relation" value={application.formData["witness3_RelationtoBride/Groom"]} />
+  <Field label="ID Proof Type" value={application.formData.witness3_IDProofType} />
+  <Field label="Address" value={application.formData.witness3_CompleteAddress} full />
+</SectionCard>
 
 <h4 style={{ marginTop: 25 }}>Uploaded Documents</h4>
 
-<div>
-  {application.documents &&
-    Object.entries(application.documents).map(([key, url]) => (
-      <p key={key}>
-        <strong>
-          {key.replace(/_/g, " ").replace("*", "")}:
-        </strong>{" "}
-        <a
-          href={url as string}
-          target="_blank"
-          rel="noreferrer"
-          style={{ color: "#3b6edc" }}
-        >
-          View Document
-        </a>
-      </p>
-    ))}
-</div>
+<SectionCard title="Uploaded Documents">
+  <DocumentCard label="Groom Photograph" url={application.documents?.groom_Photograph} />
+  <DocumentCard label="Groom Aadhaar" url={application.documents?.groom_Aadhaar} />
+  <DocumentCard label="Groom Age Proof" url={application.documents?.groom_ProofofAge} />
+  <DocumentCard label="Groom Residence Proof" url={application.documents?.groom_ProofofResidence} />
 
+  <DocumentCard label="Bride Photograph" url={application.documents?.bride_Photograph} />
+  <DocumentCard label="Bride Aadhaar" url={application.documents?.bride_Aadhaar} />
+  <DocumentCard label="Bride Age Proof" url={application.documents?.bride_ProofofAge} />
+  <DocumentCard label="Bride Residence Proof" url={application.documents?.bride_ProofofResidence} />
+
+  <DocumentCard label="Wedding Invitation" url={application.documents?.["marriageDoc_WeddingCard/Invitation"]} />
+  <DocumentCard label="Marriage Affidavit" url={application.documents?.marriageDoc_MarriageAffidavit} />
+  <DocumentCard label="Priest Certificate" url={application.documents?.["marriageDoc_PriestSignature/Certificate"]} />
+  <DocumentCard label="Wedding Photo" url={application.documents?.marriageDoc_WeddingPhoto} />
+
+  <DocumentCard label="Witness 1 ID Proof" url={application.documents?.witness1_IDProof} />
+  <DocumentCard label="Witness 1 Photo" url={application.documents?.witness1_Witness1Photo} />
+
+  <DocumentCard label="Witness 2 ID Proof" url={application.documents?.witness2_IDProof} />
+  <DocumentCard label="Witness 2 Photo" url={application.documents?.witness2_Witness2Photo} />
+
+  <DocumentCard label="Witness 3 ID Proof" url={application.documents?.witness3_IDProof} />
+  <DocumentCard label="Witness 3 Photo" url={application.documents?.witness3_Witness3Photo} />
+</SectionCard>
+{/* GENERATED DOCUMENTS (CERTIFICATE / RECEIPT / GOSHVARA) */}
+
+<SectionCard title="Generated Documents">
+
+  {!cpan && (
+    <Field label="Status" value="No application found." full />
+  )}
+
+  {cpan && checkingDocs && (
+    <Field label="Status" value="Checking documents..." full />
+  )}
+
+  {cpan && !checkingDocs && documents && (
+    <>
+      {documents.certificateUrl && (
+        <DocumentCard
+          label="Marriage Certificate"
+          url={documents.certificateUrl}
+        />
+      )}
+
+      {documents.receiptUrl && (
+        <DocumentCard
+          label="Payment Receipt"
+          url={documents.receiptUrl}
+        />
+      )}
+
+      {documents.goshvaraUrl && (
+        <DocumentCard
+          label="Goshvara"
+          url={documents.goshvaraUrl}
+        />
+      )}
+
+      {!documents.certificateUrl &&
+        !documents.receiptUrl &&
+        !documents.goshvaraUrl && (
+          <Field label="Status" value="No documents generated yet." full />
+        )}
+    </>
+  )}
+
+</SectionCard>
 
       </>
     )}
@@ -643,6 +742,111 @@ const closeStyle: React.CSSProperties = {
   cursor: "pointer",
   fontWeight: "bold",
 };
+
+const SectionCard = ({
+  title,
+  children
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <div
+    style={{
+      marginTop: 20,
+      background: "#f9fafc",
+      padding: 20,
+      borderRadius: 12,
+      border: "1px solid #e2e6ea"
+    }}
+  >
+    <h3 style={{ marginBottom: 15 }}>{title}</h3>
+
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+        gap: 15
+      }}
+    >
+      {children}
+    </div>
+  </div>
+);
+
+const Field = ({
+  label,
+  value,
+  full
+}: {
+  label: string;
+  value: any;
+  full?: boolean;
+}) => (
+  <div style={{ gridColumn: full ? "1 / -1" : "auto" }}>
+    <div
+      style={{
+        fontSize: 13,
+        color: "#666",
+        marginBottom: 4
+      }}
+    >
+      {label}
+    </div>
+    <div
+      style={{
+        fontWeight: 600,
+        color: "#222"
+      }}
+    >
+      {value || "-"}
+    </div>
+  </div>
+);
+
+
+const DocumentCard = ({
+  label,
+  url
+}: {
+  label: string;
+  url?: string;
+}) => (
+  <div
+    style={{
+      background: "#fff",
+      padding: 12,
+      borderRadius: 10,
+      border: "1px solid #e2e6ea",
+      display: "flex",
+      flexDirection: "column",
+      gap: 8
+    }}
+  >
+    <div style={{ fontSize: 14, fontWeight: 600 }}>
+      {label}
+    </div>
+
+    {url ? (
+      <button
+        onClick={() => window.open(url, "_blank")}
+        style={{
+          background: "#3b6edc",
+          color: "#fff",
+          border: "none",
+          padding: "6px 10px",
+          borderRadius: 6,
+          cursor: "pointer"
+        }}
+      >
+        View Document
+      </button>
+    ) : (
+      <span style={{ fontSize: 12, color: "#999" }}>
+        Not Uploaded
+      </span>
+    )}
+  </div>
+);
 
 
 export default Dashboard;

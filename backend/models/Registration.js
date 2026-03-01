@@ -14,6 +14,13 @@ const registrationSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
+     resetOtpHash: String,
+    otpExpiry: Date,
+    otpAttempts: {
+      type: Number,
+      default: 0
+    }
   },
   { timestamps: true }
 );

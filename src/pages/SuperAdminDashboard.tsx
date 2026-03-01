@@ -163,6 +163,85 @@ const handleReview = async (verificationId: string) => {
   }
 };
 
+const formatFormLabel = (key: string) => {
+  return key
+    // Remove prefixes
+    .replace(/^groom_/, "")
+    .replace(/^bride_/, "")
+    .replace(/^marriage_/, "")
+    .replace(/^priest_/, "")
+    .replace(/^witness[0-9]+_/, "")
+
+    // Remove duplicate witness words
+    .replace(/Witness[0-9]+/g, "")
+
+    // Fix broken words
+    .replace(/Addressin/g, "Address in")
+    .replace(/Dateof/g, "Date of")
+    .replace(/Ageat/g, "Age at")
+    .replace(/Relationto/g, "Relation to")
+    .replace(/ProofofAge/g, "Proof of Age")
+    .replace(/ProofofResidence/g, "Proof of Residence")
+
+    // Fix camel case
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+
+    // Remove underscores and *
+    .replace(/_/g, " ")
+    .replace(/\*/g, "")
+
+    .trim()
+    .replace(/\b\w/g, c => c.toUpperCase());
+};
+
+const formatDocLabel = (key: string) => {
+  let entity = "";
+  let cleanKey = key;
+
+  if (key.startsWith("groom_")) {
+    entity = "Groom";
+    cleanKey = key.replace("groom_", "");
+  } else if (key.startsWith("bride_")) {
+    entity = "Bride";
+    cleanKey = key.replace("bride_", "");
+  } else if (key.startsWith("marriageDoc_")) {
+    entity = "Marriage";
+    cleanKey = key.replace("marriageDoc_", "");
+  } else if (key.startsWith("witness1_")) {
+    entity = "Witness 1";
+    cleanKey = key.replace("witness1_", "");
+  } else if (key.startsWith("witness2_")) {
+    entity = "Witness 2";
+    cleanKey = key.replace("witness2_", "");
+  } else if (key.startsWith("witness3_")) {
+    entity = "Witness 3";
+    cleanKey = key.replace("witness3_", "");
+  }
+
+  cleanKey = cleanKey
+    .replace(/Witness[0-9]+/g, "")
+    .replace(/ProofofAge/g, "Proof of Age")
+    .replace(/ProofofResidence/g, "Proof of Residence")
+    .replace(/WeddingCard\/Invitation/g, "Wedding Invitation")
+    .replace(/PriestSignature\/Certificate/g, "Priest Certificate")
+    .replace(/IDProof/g, "ID Proof")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/_/g, " ")
+    .trim()
+    .replace(/\b\w/g, c => c.toUpperCase());
+
+  return `${entity} – ${cleanKey}`;
+};
+
+const formatLivePhotoLabel = (key: string) => {
+  if (key === "groom") return "Groom – Live Photo";
+  if (key === "bride") return "Bride – Live Photo";
+  if (key === "witness1") return "Witness 1 – Live Photo";
+  if (key === "witness2") return "Witness 2 – Live Photo";
+  if (key === "witness3") return "Witness 3 – Live Photo";
+  return key;
+};
+
   return (
     <>
       <Navbar />
@@ -566,14 +645,32 @@ const handleReview = async (verificationId: string) => {
 <h3>Application Form Details</h3>
 
 <div style={{ display: "grid", gap: 10 }}>
+<div style={reviewGrid}>
   {Object.entries(reviewApp.applicationId?.formData || {}).map(
-    ([key, value]: any) => (
-      <div key={key} style={fieldBox}>
-        <strong>{key}</strong>
-        <div>{String(value)}</div>
-      </div>
-    )
+    ([key, value]: any) => {
+      const isLarge =
+        key.toLowerCase().includes("address");
+
+      return (
+        <div
+          key={key}
+          style={{
+            ...fieldBox,
+            gridColumn: isLarge ? "1 / -1" : "auto"
+          }}
+        >
+          <div style={reviewLabel}>
+            {formatFormLabel(key)}
+          </div>
+
+          <div style={reviewValue}>
+            {String(value)}
+          </div>
+        </div>
+      );
+    }
   )}
+</div>
 </div>
 
 <p>
@@ -594,7 +691,7 @@ const handleReview = async (verificationId: string) => {
             reviewApp.applicationId?.documents || {}
           ).map(([key, value]: any) => (
             <div key={key} style={docCard}>
-              <b>{key}</b>
+            <b>{formatDocLabel(key)}</b>
 
               {value && (
                 <img
@@ -643,7 +740,7 @@ const handleReview = async (verificationId: string) => {
           {Object.entries(reviewApp.livePhotos || {}).map(
             ([key, value]: any) => (
               <div key={key} style={docCard}>
-                <b>{key}</b>
+               <b>{formatLivePhotoLabel(key)}</b>
 
                 {value && (
                   <img
@@ -1170,4 +1267,23 @@ const loaderBox = {
   borderRadius: 0,
   boxShadow: "none",
   textAlign: "center" as const
+};
+
+const reviewGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+  gap: 12
+};
+
+const reviewLabel = {
+  fontSize: 13,
+  fontWeight: 600,
+  color: "#6c757d",
+  marginBottom: 4
+};
+
+const reviewValue = {
+  fontSize: 15,
+  fontWeight: 500,
+  color: "#111"
 };

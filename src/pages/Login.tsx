@@ -100,6 +100,18 @@ const handleLogin = async () => {
           onChange={(e) => setPassword(e.target.value)}
           style={inputStyle}
           />
+          <p
+  onClick={() => navigate("/forgot-password")}
+  style={{
+    textAlign: "right",
+    fontSize: 13,
+    color: "#3b6edc",
+    cursor: "pointer",
+    marginBottom: 15
+  }}
+>
+  Forgot Password?
+</p>
 
         <button
           onClick={handleLogin}

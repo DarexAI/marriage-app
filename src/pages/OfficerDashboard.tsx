@@ -162,6 +162,23 @@ const printReport = () => {
   printWindow.document.close();
   printWindow.print();
 };
+const [stats, setStats] = useState<any>({
+  totalApplications: 0,
+  totalPhysicalVerifications: 0,
+  totalApproved: 0,
+  pendingVerifications: 0,
+  certificatesIssued: 0
+});
+
+useEffect(() => {
+  fetch(`${import.meta.env.VITE_API_URL}/officer/dashboard-stats`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        setStats(data.stats);
+      }
+    });
+}, []);
 
 useEffect(() => {
   const fetchApps = async () => {
@@ -386,13 +403,27 @@ onClick={() => {
 {/* ===== DASHBOARD STATS ===== */}
 <div style={statsContainer}>
   {[
-    { label: "Total Applications", value: 11, color: "#1976d2" },
-    { label: "Docs Submitted", value: 8, color: "#f57c00" },
-    { label: "Physical Verification", value: 9, color: "#1565c0" },
-    { label: "Total Approved", value: 9, color: "#2e7d32" },
-    { label: "Today's Pending", value: 0, color: "#d32f2f" },
-    { label: "Certificates Issued", value: 7, color: "#2e7d32" }
-  ].map((item, i) => (
+  {
+    label: "Total Applications",
+    value: stats.totalApplications,
+    color: "#1976d2"
+  },
+  {
+    label: "Physical Verifications",
+    value: stats.totalPhysicalVerifications,
+    color: "#1565c0"
+  },
+  {
+    label: "Pending Verifications",
+    value: stats.pendingVerifications,
+    color: "#d32f2f"
+  },
+  {
+    label: "Certificates Issued",
+    value: stats.certificatesIssued,
+    color: "#2e7d32"
+  }
+].map((item, i) => (
     <div key={i} style={statCard}>
       <h2 style={{ margin: 0, color: item.color }}>
         {item.value}
@@ -1405,6 +1436,7 @@ onClick={async () => {
 };
 
 
+
 export default OfficerDashboard;
 
 
@@ -1618,3 +1650,4 @@ const popupClose = {
   cursor: "pointer",
   fontWeight: 700
 };
+

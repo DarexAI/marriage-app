@@ -50,39 +50,208 @@ const OfficerEditApplication = ({ application }: Props) => {
     alert("Application Updated Successfully");
   };
 
+const formatLabel = (key: string) => {
+  return key
+    // Remove prefixes
+    .replace(/^groom_/, "")
+    .replace(/^bride_/, "")
+    .replace(/^marriage_/, "")
+    .replace(/^priest_/, "")
+    .replace(/^witness[0-9]+_/, "")
+
+    // Remove duplicate witness words
+    .replace(/Witness[0-9]+/g, "")
+
+    // Fix camelCase spacing
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+
+    // Fix broken words
+    .replace(/Addressin/g, "Address in")
+    .replace(/Dateof/g, "Date of")
+    .replace(/Ageat/g, "Age at")
+    .replace(/Relationto/g, "Relation to")
+    .replace(/ProofType/g, "Proof Type")
+
+    // Fix PAN spacing
+    .replace(/P A N/g, "PAN")
+
+    // Remove extra underscores and stars
+    .replace(/_/g, " ")
+    .replace(/\*/g, "")
+
+    // Trim extra spaces
+    .trim();
+};
+const formatDocLabel = (key: string) => {
+  let entity = "";
+  let cleanKey = key;
+
+  // Detect entity
+  if (key.startsWith("groom_")) {
+    entity = "Groom";
+    cleanKey = key.replace("groom_", "");
+  }
+
+  else if (key.startsWith("bride_")) {
+    entity = "Bride";
+    cleanKey = key.replace("bride_", "");
+  }
+
+  else if (key.startsWith("marriageDoc_")) {
+    entity = "Marriage";
+    cleanKey = key.replace("marriageDoc_", "");
+  }
+
+  else if (key.startsWith("witness1_")) {
+    entity = "Witness 1";
+    cleanKey = key.replace("witness1_", "");
+  }
+
+  else if (key.startsWith("witness2_")) {
+    entity = "Witness 2";
+    cleanKey = key.replace("witness2_", "");
+  }
+
+  else if (key.startsWith("witness3_")) {
+    entity = "Witness 3";
+    cleanKey = key.replace("witness3_", "");
+  }
+
+  // Remove duplicate words like Witness1Photo
+  cleanKey = cleanKey.replace(/Witness[0-9]+/g, "");
+
+  // Fix broken words
+  cleanKey = cleanKey
+    .replace(/ProofofAge/g, "Proof of Age")
+    .replace(/ProofofResidence/g, "Proof of Residence")
+    .replace(/WeddingCard\/Invitation/g, "Wedding Invitation")
+    .replace(/PriestSignature\/Certificate/g, "Priest Certificate")
+    .replace(/IDProof/g, "ID Proof");
+
+  // Fix camelCase
+  cleanKey = cleanKey
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/_/g, " ")
+    .trim()
+    .replace(/\b\w/g, c => c.toUpperCase());
+
+  return `${entity} – ${cleanKey}`;
+};
+
   return (
     <div style={container}>
       <h2>Marriage Application Details</h2>
 
       {/* ========= TEXT DATA ========= */}
-      <div style={grid}>
-        {Object.entries(formData).map(([key, value]: any) => {
-          const isLarge =
-            key.toLowerCase().includes("address");
+{/* ========= TEXT DATA ========= */}
 
-          return (
-            <div
-              key={key}
-              style={{
-                ...fieldBox,
-                gridColumn: isLarge ? "1 / -1" : "auto",
-              }}
-            >
-              <label style={label}>
-                {key.replace(/_/g, " ")}
-              </label>
+<h3>Groom Details</h3>
+<div style={grid}>
+  {Object.entries(formData)
+    .filter(([key]) => key.startsWith("groom"))
+    .map(([key, value]: any) => {
+      const isLarge = key.toLowerCase().includes("address");
 
-              <input
-                value={value || ""}
-                onChange={(e) =>
-                  handleChange(key, e.target.value)
-                }
-                style={input}
-              />
-            </div>
-          );
-        })}
-      </div>
+      return (
+        <div
+          key={key}
+          style={{
+            ...fieldBox,
+            gridColumn: isLarge ? "1 / -1" : "auto",
+          }}
+        >
+          <label style={label}>{formatLabel(key)}</label>
+
+          <input
+            value={value || ""}
+            onChange={(e) =>
+              handleChange(key, e.target.value)
+            }
+            style={input}
+          />
+        </div>
+      );
+    })}
+</div>
+
+<h3 style={{ marginTop: 30 }}>Bride Details</h3>
+<div style={grid}>
+  {Object.entries(formData)
+    .filter(([key]) => key.startsWith("bride"))
+    .map(([key, value]: any) => {
+      const isLarge = key.toLowerCase().includes("address");
+
+      return (
+        <div
+          key={key}
+          style={{
+            ...fieldBox,
+            gridColumn: isLarge ? "1 / -1" : "auto",
+          }}
+        >
+          <label style={label}>{formatLabel(key)}</label>
+
+          <input
+            value={value || ""}
+            onChange={(e) =>
+              handleChange(key, e.target.value)
+            }
+            style={input}
+          />
+        </div>
+      );
+    })}
+</div>
+
+<h3 style={{ marginTop: 30 }}>Marriage Details</h3>
+<div style={grid}>
+  {Object.entries(formData)
+    .filter(([key]) => key.startsWith("marriage"))
+    .map(([key, value]: any) => {
+      return (
+        <div key={key} style={fieldBox}>
+          <label style={label}>{formatLabel(key)}</label>
+
+          <input
+            value={value || ""}
+            onChange={(e) =>
+              handleChange(key, e.target.value)
+            }
+            style={input}
+          />
+        </div>
+      );
+    })}
+</div>
+
+<h3 style={{ marginTop: 30 }}>Witness Details</h3>
+<div style={grid}>
+  {Object.entries(formData)
+    .filter(([key]) => key.startsWith("witness"))
+    .map(([key, value]: any) => {
+      const isLarge = key.toLowerCase().includes("address");
+
+      return (
+        <div
+          key={key}
+          style={{
+            ...fieldBox,
+            gridColumn: isLarge ? "1 / -1" : "auto",
+          }}
+        >
+          <label style={label}>{formatLabel(key)}</label>
+
+          <input
+            value={value || ""}
+            onChange={(e) =>
+              handleChange(key, e.target.value)
+            }
+            style={input}
+          />
+        </div>
+      );
+    })}
+</div>
 
       {/* ========= DOCUMENTS ========= */}
 <h3 style={{ marginTop: 40 }}>Uploaded Documents</h3>
@@ -103,9 +272,9 @@ const OfficerEditApplication = ({ application }: Props) => {
 
     return (
       <div key={key} style={docCard}>
-        <p style={{ fontWeight: 600 }}>
-          {key.replace(/_/g, " ")}
-        </p>
+<p style={{ fontWeight: 600 }}>
+  {formatDocLabel(key)}
+</p>
 
         {/* IMAGE PREVIEW */}
         {isImage ? (
@@ -171,7 +340,7 @@ const container = {
 
 const grid = {
   display: "grid",
-  gridTemplateColumns: "1fr 1fr",
+  gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
   gap: 20,
 };
 

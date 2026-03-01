@@ -9,6 +9,10 @@ import OfficerDashboard from "./pages/OfficerDashboard";
 import OfficerSlotsPage from "./pages/OfficerSlotsPage";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import SuperAdminLogin from "./pages/SuperAdminLogin";
+import ForgotPassword from "./pages/ForgotPassword";
+import VerifyOtp from "./pages/VerifyOtp";
+import ResetPassword from "./pages/ResetPassword";
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -22,6 +26,9 @@ export default function App() {
 <Route path="/officer/slots" element={<OfficerSlotsPage />} />
 <Route path="/super-admin/login" element={<SuperAdminLogin />} />
 <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
+<Route path="/forgot-password" element={<ForgotPassword />} />
+<Route path="/verify-otp" element={<VerifyOtp />} />
+<Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </BrowserRouter>
   );
