@@ -18,6 +18,7 @@ const CertificateSchema = new mongoose.Schema({
   },
   blockchainError: String,
   registeredOnChain: { type: Boolean, default: false },
+  certificateRecordAddress: String,
   
   createdAt: { type: Date, default: Date.now }
 });

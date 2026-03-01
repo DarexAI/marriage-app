@@ -1096,6 +1096,7 @@ certificate.txSignature = result.txSignature;
 certificate.certificateHash = result.certificateHash;
 certificate.blockchainStatus = "confirmed";
 certificate.registeredOnChain = true;
+certificate.certificateRecordAddress = result.recordPDA;
 await certificate.save();
 
 console.log(`Certificate ${certId} registered successfully`);
