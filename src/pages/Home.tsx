@@ -19,7 +19,7 @@ const captureFingerprint = async () => {
     const response = await fetch("https://127.0.0.1:11100/rd/capture", {
       method: "POST",
       headers: {
-        "Content-Type": "text/xml"
+        // 🔥 REMOVE content-type
       },
       body: `<?xml version="1.0"?>
 <Capture pidVer="2.0" timeout="10000" env="P">
@@ -30,28 +30,10 @@ const captureFingerprint = async () => {
     });
 
     const pidXml = await response.text();
-
     console.log("PID XML:", pidXml);
-
-    // Optional: check if capture failed
-    if (!pidXml.includes("<PidData")) {
-      alert("Capture failed");
-      return;
-    }
-
-    await fetch("https://applogix.cloud/api/store-pid", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ pidXml })
-    });
-
-    alert("Fingerprint captured and stored ✅");
 
   } catch (error) {
     console.error("Capture error:", error);
-    alert("RD not reachable");
   }
 };
 
