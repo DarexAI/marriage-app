@@ -15,7 +15,7 @@ const Certificate = require("../models/Certificate");
 const crypto = require("crypto");
 const  PublicKey = require("@solana/web3.js");
 const blockchainService = require("../services/blockchain");
-
+const QRCode = require("qrcode");
 // =====================================================
 // OVERVIEW STATS
 // =====================================================
@@ -264,6 +264,15 @@ const marriagePlace =
 const appDate = new Date(app.createdAt).toLocaleDateString();
 
 const cpan = verification.cpan;
+const applicantName = `${groomNameEnglish} & ${brideNameEnglish}`;
+const verifyUrl =
+  `${process.env.BASE_URL}/verify?name=${encodeURIComponent(applicantName)}`;
+
+const qrBuffer = await QRCode.toBuffer(verifyUrl, {
+  type: "png",
+  width: 150,
+  margin: 1
+});
     /* ===== PDF SETUP ===== */
 
     const doc = new PDFDocument({ size: "A4", margin: 40 });
@@ -306,13 +315,32 @@ const headerImage = path.join(
 doc.image(headerImage, 40, 40, {
   width: doc.page.width - 80
 });
+// =============================
+// PLACE QR ABOVE RIGHT LOGO
+// =============================
 
+const qrSize = 70;
+
+// Adjust these 2 values slightly if needed
+const qrX = doc.page.width - 125;
+const qrY = 40;
+
+// Draw QR ON TOP of header image
+doc.image(qrBuffer, qrX, qrY, {
+  width: qrSize
+});
+
+// Small label
+doc.fontSize(8)
+   .fillColor("black")
+   .text("Scan to Verify", qrX - 5, qrY + qrSize + 3, {
+     width: qrSize + 10,
+     align: "center"
+   });
+
+doc.x = 40;  
 // Move cursor below header
-doc.moveDown(22);
-/* ===== HUSBAND DETAILS ===== */
-/* ===== CERTIFICATE BODY (MATCH OFFICIAL PDF STYLE) ===== */
-
-doc.moveDown(2);
+doc.y=270
 
 // CERTIFICATION LINE
 doc.font("marathi").fontSize(12)
@@ -384,7 +412,7 @@ doc.font("Helvetica").fontSize(11)
     /* ===== PHOTOS FROM APPLICATION DOCUMENTS ===== */
 
 doc.moveDown(1);
-const imageY = doc.y + 5;
+const imageY = doc.y;
 
 if (docs["groom_Photograph"]) {
   const g = await axios.get(docs["groom_Photograph"], {
@@ -1148,13 +1176,25 @@ const marriageDate =
 
 const marriagePlace =
   form["marriage_PlaceofMarriage"] || "N/A";
+const applicantName = `${groomNameEnglish} & ${brideNameEnglish}`;
+const verifyUrl =
+  `${process.env.BASE_URL}/verify?name=${encodeURIComponent(applicantName)}`;
+
+const qrBuffer = await QRCode.toBuffer(verifyUrl, {
+  type: "png",
+  width: 150,
+  margin: 1
+});
 
 const appDate = new Date(app.createdAt).toLocaleDateString();
 
 const doc = new PDFDocument({ size: "A4", margin: 40 });
 const buffers = [];
 doc.on("data", buffers.push.bind(buffers));
-
+const BORDER_X = 20;
+const BORDER_Y = 30;
+const BORDER_WIDTH = 555;
+const BORDER_HEIGHT = 780;
 
 /* =============================
    COPY YOUR ORIGINAL CERTIFICATE BODY HERE
@@ -1177,7 +1217,9 @@ const contentWidth = pageWidth - 100; // safe margin width
     doc.fontSize(8).text(now, { align: "right" });
 
     /* ===== BORDER ===== */
-    doc.rect(20, 30, 555, 760).lineWidth(2).stroke();
+ doc.rect(BORDER_X, BORDER_Y, BORDER_WIDTH, BORDER_HEIGHT)
+   .lineWidth(2)
+   .stroke();
 
     /* ===== LOGOS ===== */
     const logo = path.join(__dirname, "../assets/logo.png");
@@ -1199,11 +1241,23 @@ const headerImage = path.join(
 doc.image(headerImage, 40, 40, {
   width: doc.page.width - 80
 });
+const qrSize = 65;
 
-// Move cursor below header
-doc.moveDown(22);
-/* ===== HUSBAND DETAILS ===== */
-/* ===== CERTIFICATE BODY (MATCH OFFICIAL PDF STYLE) ===== */
+const qrX = BORDER_X + BORDER_WIDTH - qrSize - 42;
+const qrY = BORDER_Y + 12;
+
+doc.image(qrBuffer, qrX, qrY, { width: qrSize });
+
+doc.fontSize(8)
+   .fillColor("black")
+   .text("Scan to Verify", qrX, qrY + qrSize + 4, {
+     width: qrSize,
+     align: "center"
+   });
+
+   // Reset text cursor to left content area
+doc.x = BORDER_X + 20;
+doc.y = BORDER_Y + 220;
 
 doc.moveDown(2);
 
@@ -1214,43 +1268,63 @@ doc.font("marathi").fontSize(12)
   { align: "center" }
 );
 
-doc.moveDown(1);
+doc.moveDown();
 
 /* ===== HUSBAND DETAILS ===== */
+/* ===== HUSBAND DETAILS ===== */
+
 doc.font("marathi").fontSize(12)
-.text(
-  `पतीचे नाव : ${groomNameMarathi}          आधार क्रमांक /Aadhar No.: ${
-    form["groom_AadhaarNumber"] || "N/A"
-  }`
-);
+  .text(`पतीचे नाव : ${groomNameMarathi}`, {
+    width: BORDER_WIDTH - 60
+  });
 
 doc.font("Helvetica")
-.text(`Name of Husband : ${groomNameEnglish}`);
+  .text(`Name of Husband : ${groomNameEnglish}`, {
+    width: BORDER_WIDTH - 60
+  });
+
+doc.font("Helvetica")
+  .text(`Aadhar No.: ${form["groom_AadhaarNumber"] || "N/A"}`, {
+    width: BORDER_WIDTH - 60
+  });
 
 doc.font("marathi")
-.text(`राहणार : ${groomAddressMarathi}`);
+  .text(`राहणार : ${groomAddressMarathi}`, {
+    width: BORDER_WIDTH - 60
+  });
 
 doc.font("Helvetica")
-.text(`residing at : ${groomAddressEnglish}`);
+  .text(`residing at : ${groomAddressEnglish}`, {
+    width: BORDER_WIDTH - 60
+  });
 
 /* ===== WIFE DETAILS ===== */
-doc.moveDown(1);
+doc.moveDown();
 
 doc.font("marathi")
-.text(
-  `पत्नीचे नाव : ${brideNameMarathi}          आधार क्रमांक /Aadhar No.: ${
-    form["bride_AadhaarNumber"] || "N/A"
-  }`
-);
+  .text(`पत्नीचे नाव : ${brideNameMarathi}`, {
+    width: BORDER_WIDTH - 60
+  });
 
 doc.font("Helvetica")
-.text(`Wife's name : ${brideNameEnglish}`);
+  .text(`Wife's name : ${brideNameEnglish}`, {
+    width: BORDER_WIDTH - 60
+  });
+
+doc.font("Helvetica")
+  .text(`Aadhar No.: ${form["bride_AadhaarNumber"] || "N/A"}`, {
+    width: BORDER_WIDTH - 60
+  });
 
 doc.font("marathi")
-.text(`राहणार : ${brideAddressMarathi}`);
+  .text(`राहणार : ${brideAddressMarathi}`, {
+    width: BORDER_WIDTH - 60
+  });
 
 doc.font("Helvetica")
-.text(`residing at : ${brideAddressEnglish}`);
+  .text(`residing at : ${brideAddressEnglish}`, {
+    width: BORDER_WIDTH - 60
+  });
 
 /* ===== MARRIAGE PARAGRAPH ===== */
 doc.moveDown(1);
@@ -1275,18 +1349,40 @@ doc.font("Helvetica").fontSize(11)
 }
 );
     /* ===== PHOTOS FROM APPLICATION DOCUMENTS ===== */
+// Reserve bottom layout zones
+const footerY = BORDER_Y + BORDER_HEIGHT - 150;
+const blockchainHeight = 65;
+const blockchainY = BORDER_Y + BORDER_HEIGHT - blockchainHeight - 25;
 
-doc.moveDown(1);
-const imageY = doc.y + 5;
+// Photos must sit ABOVE footer
+const photoHeight = 120;
+const photoWidth = 100;
 
+// Calculate safe photo Y
+let imageY = footerY - photoHeight - 30;
+
+// Ensure it never overlaps paragraph
+if (imageY < doc.y + 20) {
+  imageY = doc.y + 20;
+}
+const centerX = BORDER_X + BORDER_WIDTH / 2;
+const gap = 60;
+const shortHash = certificate.certificateHash
+  ? certificate.certificateHash.slice(0, 22) + "..."
+  : "N/A";
+
+const shortTx = certificate.txSignature
+  ? certificate.txSignature.slice(0, 22) + "..."
+  : "N/A";
+const leftPhotoX = centerX - gap - photoWidth-60;
+const rightPhotoX = centerX + gap+60;
 if (docs["groom_Photograph"]) {
   const g = await axios.get(docs["groom_Photograph"], {
     responseType: "arraybuffer"
   });
 
-  doc.image(g.data, 100, imageY, {
-    fit: [90, 110],
-    align: "center"
+  doc.image(g.data, leftPhotoX, imageY, {
+    fit: [photoWidth, photoHeight]
   });
 }
 
@@ -1295,15 +1391,10 @@ if (docs["bride_Photograph"]) {
     responseType: "arraybuffer"
   });
 
-  doc.image(b.data, 420, imageY, {
-    fit: [90, 110],
-    align: "center"
+  doc.image(b.data, rightPhotoX, imageY, {
+    fit: [photoWidth, photoHeight]
   });
 }
-    /* ===== FOOTER ===== */
-const footerY = 720;
-
-// LEFT
 doc.font("Helvetica-Bold")
   .text("Place : ULHASNAGAR", 50, footerY);
 
@@ -1312,69 +1403,47 @@ doc.text("Date : ", 50, footerY + 15, { continued: true });
 doc.font("Helvetica-Bold")
   .text(new Date().toDateString());
 
-// CENTER SEAL
 doc.circle(300, footerY + 15, 28).stroke();
 doc.fontSize(10).text("Seal", 285, footerY + 10);
 
-// RIGHT SIGNATURE
 doc.font("Helvetica-Bold")
   .text("Signature", 490, footerY);
 
 doc.text("Registrar of Marriages", 440, footerY + 15);
 doc.text("ULHASNAGAR-3", 460, footerY + 30);
+const INNER_PADDING = 25;
 
-// --- AFTER SEAL ---
-// ============================
-// PAGE 2 – 3 LINE VERIFICATION BOX
-// ============================
+const boxWidth = BORDER_WIDTH - (INNER_PADDING * 2);
+const boxX = BORDER_X + INNER_PADDING;
 
-doc.addPage();
-
-// Border for page 2
-doc.rect(20, 30, 555, 760).lineWidth(2).stroke();
-
-const boxWidth = 520;
-const boxHeight = 65;   // slightly taller for 3 lines
-const boxX = 40;
-const boxY = 60;
-
-// Background
-doc.rect(boxX, boxY, boxWidth, boxHeight)
+doc.rect(boxX, blockchainY, boxWidth, blockchainHeight)
    .fillColor("#e6f4ea")
    .fill();
 
-// Border
-doc.rect(boxX, boxY, boxWidth, boxHeight)
+doc.rect(boxX, blockchainY, boxWidth, blockchainHeight)
    .lineWidth(1)
    .strokeColor("#28a745")
    .stroke();
 
 doc.fillColor("#155724");
 
-// 🔹 Line 1 — Verification Title
 doc.font("Helvetica-Bold")
    .fontSize(11)
-   .text("Verified on Blockchain", boxX + 12, boxY + 8);
+   .text("Verified on Blockchain", boxX + 12, blockchainY + 8);
 
-// 🔹 Line 2 — CPAN + Certificate ID
 doc.font("Helvetica")
    .fontSize(9)
    .text(
      `CPAN: ${cpan}    |    Certificate ID: ${certId}`,
      boxX + 12,
-     boxY + 25
+     blockchainY + 25
    );
 
-// Shorten long values for clean formatting
-const shortHash = result.certificateHash.slice(0, 22) + "...";
-const shortTx = result.txSignature.slice(0, 22) + "...";
-
-// 🔹 Line 3 — Hash + TX
 doc.fontSize(8)
    .text(
      `Hash: ${shortHash}    |    TX: ${shortTx}`,
      boxX + 12,
-     boxY + 42,
+     blockchainY + 42,
      { width: boxWidth - 24 }
    );
 
@@ -1531,16 +1600,49 @@ router.get("/blockchain/status", async (req, res) => {
 // ============================================
 // TEST BLOCKCHAIN PDF (NO DB, NO BLOCKCHAIN)
 // ============================================
-
 router.get("/test-blockchain-pdf", async (req, res) => {
   try {
     const PDFDocument = require("pdfkit");
     const path = require("path");
-const cpan = "CPAN-TEST-123456";
-const certId = "CERT-2025-28963133";
-const result = {
-  txSignature: "0x75301ba52f8e2c75e8..."
-};
+    const QRCode = require("qrcode");
+    const axios = require("axios");
+
+    /* =========================
+       DUMMY DATA (SAFE TEST)
+    ==========================*/
+
+    const groomNameEnglish = "Rahul Sharma";
+    const groomNameMarathi = "राहुल शर्मा";
+
+    const brideNameEnglish = "Sneha Patil";
+    const brideNameMarathi = "स्नेहा पाटील";
+
+    const groomAddressEnglish = "Mumbai, Maharashtra";
+    const groomAddressMarathi = "मुंबई, महाराष्ट्र";
+
+    const brideAddressEnglish = "Pune, Maharashtra";
+    const brideAddressMarathi = "पुणे, महाराष्ट्र";
+
+    const marriageDate = "12/02/2025";
+    const marriagePlace = "Ulhasnagar";
+
+    const appDate = new Date().toLocaleDateString();
+    const cpan = "CPAN-TEST-123456";
+    const certId = "CERT-2025-TEST-9999";
+
+    const applicantName = `${groomNameEnglish} & ${brideNameEnglish}`;
+    const verifyUrl = `http://localhost:5173/verify?name=${encodeURIComponent(applicantName)}`;
+
+    const qrBuffer = await QRCode.toBuffer(verifyUrl, {
+      type: "png",
+      width: 150,
+      margin: 1
+    });
+
+    /* =========================
+       PDF SETUP
+    ==========================*/
+
     const doc = new PDFDocument({ size: "A4", margin: 40 });
 
     res.setHeader("Content-Type", "application/pdf");
@@ -1548,87 +1650,245 @@ const result = {
 
     doc.pipe(res);
 
-    // Border
-    doc.rect(20, 30, 555, 760).lineWidth(2).stroke();
+    /* =========================
+       FONT
+    ==========================*/
 
-    // Header
-    doc.fontSize(18).text("Marriage Certificate (TEST MODE)", {
-      align: "center"
+    doc.registerFont(
+      "marathi",
+      path.join(__dirname, "../fonts/NotoSansDevanagari-Regular.ttf")
+    );
+
+    /* =========================
+       BORDER
+    ==========================*/
+
+    doc.rect(20, 30, 555, 780).lineWidth(2).stroke();
+
+    /* =========================
+       HEADER IMAGE
+    ==========================*/
+
+    const headerImage = path.join(__dirname, "../assets/header.png");
+
+    doc.image(headerImage, 40, 40, {
+      width: doc.page.width - 80
     });
 
-    doc.moveDown(2);
+    /* =========================
+       QR (TOP RIGHT SAME PLACE)
+    ==========================*/
 
-    doc.fontSize(12).text("This is a UI test certificate only.");
+    const qrSize = 70;
+    const qrX = doc.page.width - 125;
+    const qrY = 40;
+
+    doc.image(qrBuffer, qrX, qrY, { width: qrSize });
+
+    doc.fontSize(8)
+      .fillColor("black")
+      .text("Scan to Verify", qrX - 5, qrY + qrSize + 3, {
+        width: qrSize + 10,
+        align: "center"
+      });
+doc.x = 60;
+doc.y = 260;
+    /* =========================
+       CERTIFICATION LINE
+    ==========================*/
+
+    doc.font("marathi").fontSize(12)
+      .text(
+        "प्रमाणित करण्यात येते की / Certified that, Marriage between",
+        { align: "center" }
+      );
+
     doc.moveDown(1);
 
-    doc.text("You can modify layout safely here.");
-    doc.moveDown(5);
+    /* =========================
+       HUSBAND DETAILS
+    ==========================*/
 
-    // Fake footer
-    const footerY = 720;
+/* ===== HUSBAND DETAILS ===== */
 
-    doc.font("Helvetica-Bold")
-      .text("Place : ULHASNAGAR", 50, footerY);
+doc.font("marathi").fontSize(12)
+  .text(`पतीचे नाव : ${groomNameMarathi}`);
 
-    doc.text("Date : ", 50, footerY + 15, { continued: true });
-    doc.font("Helvetica-Bold")
-      .text(new Date().toDateString());
+doc.font("Helvetica")
+  .text(`Name of Husband : ${groomNameEnglish}`);
 
-    doc.circle(300, footerY + 15, 28).stroke();
-    doc.text("Seal", 285, footerY + 10);
+doc.font("Helvetica")
+  .text(`Aadhar No.: 123456789012`);
 
-    doc.font("Helvetica-Bold")
-      .text("Signature", 490, footerY);
+doc.font("marathi")
+  .text(`राहणार : ${groomAddressMarathi}`);
 
-    doc.text("Registrar of Marriages", 440, footerY + 15);
-    doc.text("ULHASNAGAR-3", 460, footerY + 30);
+doc.font("Helvetica")
+  .text(`residing at : ${groomAddressEnglish}`);
 
-    // -------- GREEN BLOCK (TEST ONLY) --------
-// ============================
-// BLOCKCHAIN PAGE (PAGE 2)
-// ============================
-doc.addPage();
+    /* =========================
+       WIFE DETAILS
+    ==========================*/
 
-// Optional border (keep if you want)
-doc.rect(20, 30, 555, 760).lineWidth(2).stroke();
+    doc.moveDown(1);
 
-// SMALL COMPACT GREEN VERIFICATION BOX
+/* ===== WIFE DETAILS ===== */
+
+doc.moveDown(1);
+
+doc.font("marathi")
+  .text(`पत्नीचे नाव : ${brideNameMarathi}`);
+
+doc.font("Helvetica")
+  .text(`Wife's name : ${brideNameEnglish}`);
+
+doc.font("Helvetica")
+  .text(`Aadhar No.: 987654321098`);
+
+doc.font("marathi")
+  .text(`राहणार : ${brideAddressMarathi}`);
+
+doc.font("Helvetica")
+  .text(`residing at : ${brideAddressEnglish}`);
+
+    /* =========================
+       MARRIAGE PARAGRAPH
+    ==========================*/
+
+    doc.moveDown();
+
+    doc.font("marathi").fontSize(12)
+      .text(
+        `यांचा विवाह दिनांक ${marriageDate} रोजी ${marriagePlace} येथे विवाह विधी संपन्न झाला. त्याची महाराष्ट्र विवाह नोंदणी विधेयक १९९८ अन्वये CPAN ${cpan} वर दिनांक ${appDate} रोजी माझ्याकडून नोंदणी करण्यात आली आहे.`,
+        { align: "justify", width: doc.page.width - 80 }
+      );
+
+    doc.moveDown();
+
+    doc.font("Helvetica").fontSize(11)
+      .text(
+        `Solemnized on Date : 2007-11-04 at Voluptatum voluptate (Place) is registered by me on Date :
+27/2/2026 at CPAN : CPAN-ULH-20260227-383767 of register of Marriages maintained under the
+Maharashtra Regulation of Marriage Bureaus and Registrationof Marriages Act 1998.`,
+        { align: "justify", width: doc.page.width - 80 }
+      );
+
+    /* =========================
+       DUMMY PHOTOS
+    ==========================*/
+
+   const imageY = doc.y + 5;
+
+const placeholder = path.join(__dirname, "../assets/logo.png");
+
+doc.image(placeholder, 100, imageY, { fit: [90, 110] });
+doc.image(placeholder, 420, imageY, { fit: [90, 110] });
+
+    /* =========================
+       FOOTER
+    ==========================*/
+/* =========================
+   FOOTER + BLOCKCHAIN (PAGE 1 ONLY)
+==========================*/
+/* =========================
+   FOOTER (FIRST)
+==========================*/
+
+const footerY = doc.page.height - 130;
+
+doc.fillColor("black");
+
+doc.font("Helvetica-Bold")
+  .text("Place : ULHASNAGAR", 50, footerY);
+
+doc.text("Date : ", 50, footerY + 15, { continued: true });
+
+doc.font("Helvetica-Bold")
+  .text(new Date().toDateString());
+
+doc.circle(300, footerY + 15, 28).stroke();
+doc.fontSize(10).text("Seal", 285, footerY + 10);
+
+doc.font("Helvetica-Bold")
+  .text("Signature", 490, footerY);
+
+doc.text("Registrar of Marriages", 440, footerY + 15);
+doc.text("ULHASNAGAR-3", 460, footerY + 30);
+
+
+/* =========================
+   BLOCKCHAIN (AFTER FOOTER)
+==========================*/
 
 const boxWidth = 520;
-const boxHeight = 40;   // very small
+const boxHeight = 40;
 const boxX = 40;
-const boxY = 60;        // top of page
+const boxY = footerY + 55;   // BELOW footer
 
-doc
-  .rect(boxX, boxY, boxWidth, boxHeight)
+doc.rect(boxX, boxY, boxWidth, boxHeight)
   .fillColor("#e6f4ea")
   .fill();
 
-doc
-  .rect(boxX, boxY, boxWidth, boxHeight)
+doc.rect(boxX, boxY, boxWidth, boxHeight)
   .lineWidth(1)
   .strokeColor("#28a745")
   .stroke();
 
 doc.fillColor("#155724");
 
-// First line (bold style)
 doc.font("Helvetica-Bold").fontSize(10)
   .text("Verified on BSC Blockchain", boxX + 10, boxY + 8);
 
-// Second compact line
 doc.font("Helvetica").fontSize(8)
   .text(
-    `Cert No: ${certId}  |  CPAN: ${cpan}  |  TX: ${result.txSignature}`,
+    `Cert No: ${certId}  |  CPAN: ${cpan}  |  TX: 0x75301ba52f8e2c75e8...`,
     boxX + 10,
     boxY + 22,
     { width: boxWidth - 20 }
   );
-    doc.end();
+
+doc.end();
 
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false });
+  }
+});
+
+// =====================================================
+// SIMPLE PUBLIC VERIFICATION (NO BLOCKCHAIN CHECK)
+// =====================================================
+router.get("/public/verify/:cpan", async (req, res) => {
+  try {
+    const { cpan } = req.params;
+
+    const certificate = await Certificate.findOne({ cpan });
+
+    if (!certificate) {
+      return res.json({
+        success: false,
+        verified: false,
+        message: "Certificate not found"
+      });
+    }
+
+    return res.json({
+      success: true,
+      verified: true,
+      message: "Verified on Blockchain Successfully",
+      data: {
+        cpan: certificate.cpan,
+        certificateRecordAddress: certificate.certificateRecordAddress,
+        from: "AoAxwT6ezYEgHvvXz6pWxkKPzJwKJwrAE4ineJvgGwp4"
+      }
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      verified: false,
+      message: "Server error"
+    });
   }
 });
 

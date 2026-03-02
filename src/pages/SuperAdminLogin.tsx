@@ -5,40 +5,53 @@ import Footer from "../components/Footer";
 
 const SuperAdminLogin = () => {
   const navigate = useNavigate();
+const [isLoading, setIsLoading] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const login = async () => {
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/super-admin/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password })
-        }
-      );
+const login = async () => {
+  try {
+    setIsLoading(true); // 🔥 start loader
 
-      const data = await res.json();
-
-      if (!data.success) {
-        alert(data.msg);
-        return;
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/super-admin/login`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
       }
+    );
 
-      localStorage.setItem("superAdminToken", data.token);
-      localStorage.setItem("superAdmin", JSON.stringify(data.admin));
+    const data = await res.json();
 
-      navigate("/super-admin/dashboard");
-
-    } catch {
-      alert("Login failed");
+    if (!data.success) {
+      alert(data.msg);
+      return;
     }
-  };
+
+    localStorage.setItem("superAdminToken", data.token);
+    localStorage.setItem("superAdmin", JSON.stringify(data.admin));
+
+    navigate("/super-admin/dashboard");
+
+  } catch {
+    alert("Login failed");
+  } finally {
+    setIsLoading(false); // 🔥 stop loader
+  }
+};
 
   return (
     <>
+    <style>
+{`
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+`}
+</style>
     <Navbar/>
     <div
       style={{
@@ -80,9 +93,22 @@ paddingTop: "80px",
           style={input}
           />
 
-        <button style={btn} onClick={login}>
-          Login
-        </button>
+       <button
+  style={{
+    ...btn,
+    opacity: isLoading ? 0.7 : 1,
+    cursor: isLoading ? "not-allowed" : "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8
+  }}
+  disabled={isLoading}
+  onClick={login}
+>
+  {isLoading && <span style={spinner}></span>}
+  {isLoading ? "Signing In..." : "Login"}
+</button>
       </div>
     </div>
     <Footer/>
@@ -107,6 +133,14 @@ const btn = {
   borderRadius: 8,
   cursor: "pointer",
   fontWeight: 600
+};
+const spinner = {
+  width: 16,
+  height: 16,
+  border: "2px solid white",
+  borderTop: "2px solid transparent",
+  borderRadius: "50%",
+  animation: "spin 0.8s linear infinite"
 };
 
 export default SuperAdminLogin;

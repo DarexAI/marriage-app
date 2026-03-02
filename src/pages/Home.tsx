@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 const Home = () => {
+  const user = JSON.parse(localStorage.getItem("user"));
+const userId = user?._id;
   const navigate = useNavigate();
  const [hoveredStat, setHoveredStat] = useState<string | null>(null);
 type Official = {
@@ -14,28 +16,6 @@ type Official = {
   image: string;
 };
 
-const captureFingerprint = async () => {
-  try {
-    const response = await fetch("https://127.0.0.1:11100/rd/capture", {
-      method: "POST",
-      headers: {
-        // 🔥 REMOVE content-type
-      },
-      body: `<?xml version="1.0"?>
-<Capture pidVer="2.0" timeout="10000" env="P">
-  <Opts fCount="1" fType="2" iCount="0" format="0" pidVer="2.0"/>
-  <Demo/>
-  <CustOpts/>
-</Capture>`
-    });
-
-    const pidXml = await response.text();
-    console.log("PID XML:", pidXml);
-
-  } catch (error) {
-    console.error("Capture error:", error);
-  }
-};
 
 const officials: Official[] = [
   {
@@ -95,21 +75,7 @@ flexWrap: "wrap",
   >
     Super Admin Login
   </button>
-  <button
-  onClick={captureFingerprint}
-  style={{
-    background: "#ff7a00",
-    color: "white",
-    border: "none",
-    padding: "10px 18px",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontWeight: 600,
-    transition: "0.3s",
-  }}
->
-  Test Capture
-</button>
+  
 
   <button
     onClick={() => navigate("/officer-login")}

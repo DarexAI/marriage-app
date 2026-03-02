@@ -3,6 +3,7 @@ import React, { useState } from "react";
 const ApplyMarriageForm = () => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<any>({});
+const [isSubmitting, setIsSubmitting] = useState(false);
 
  const next = () => {
   if (!validateStep(step)) return;
@@ -246,6 +247,8 @@ const validateStep = (currentStep: number) => {
 
 const submitApplication = async () => {
   try {
+    setIsSubmitting(true); // START LOADER
+
     const form = new FormData();
     const textData: any = {};
 
@@ -261,10 +264,8 @@ const submitApplication = async () => {
       localStorage.getItem("applicant") || "{}"
     );
 
-    // ADD USER ID INSIDE JSON
     textData.userId = applicant.email;
-form.append("userId", applicant.email);
-    // SEND JSON ONCE
+    form.append("userId", applicant.email);
     form.append("data", JSON.stringify(textData));
 
     const res = await fetch(
@@ -288,15 +289,24 @@ form.append("userId", applicant.email);
   } catch (err) {
     console.error(err);
     alert("Server error");
+  } finally {
+    setIsSubmitting(false); // STOP LOADER
   }
 };
-
 
 
 
   return (
     <div style={{ background: "white", padding: 25, borderRadius: 12 }}>
       {/* STEP NAVIGATION */}
+      <style>
+{`
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+`}
+</style>
       <div style={navStyle}>
         {[
           "Groom Details",
@@ -392,13 +402,25 @@ form.append("userId", applicant.email);
           </button>
         ) : (
 <button
-  style={btnPrimary}
+  style={{
+    ...btnPrimary,
+    opacity: isSubmitting ? 0.7 : 1,
+    cursor: isSubmitting ? "not-allowed" : "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  }}
+  disabled={isSubmitting}
   onClick={() => {
     if (!validateForm()) return;
     submitApplication();
   }}
 >
-  Submit Application
+  {isSubmitting && (
+    <span style={spinnerStyle}></span>
+  )}
+  {isSubmitting ? "Submitting..." : "Submit Application"}
 </button>
         )}
       </div>
@@ -969,4 +991,12 @@ const dashboardBtn: React.CSSProperties = {
   color: "white",
   cursor: "pointer",
   fontWeight: 600
+};
+const spinnerStyle: React.CSSProperties = {
+  width: 16,
+  height: 16,
+  border: "2px solid white",
+  borderTop: "2px solid transparent",
+  borderRadius: "50%",
+  animation: "spin 0.8s linear infinite",
 };

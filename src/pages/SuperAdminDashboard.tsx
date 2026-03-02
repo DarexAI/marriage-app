@@ -344,7 +344,14 @@ const formatLivePhotoLabel = (key: string) => {
   return (
     <>
       <Navbar />
-
+<style>
+{`
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+`}
+</style>
       <div style={container}>
         {/* HEADER */}
         <div style={header}>
@@ -607,6 +614,7 @@ const formatLivePhotoLabel = (key: string) => {
 
             {/* Actions */}
             <td style={td}>
+  <div style={actionContainer}>
               
 <button
   style={reviewBtn}
@@ -622,10 +630,15 @@ const formatLivePhotoLabel = (key: string) => {
     ...blockchainBtn,
     background: app.certificate?.registeredOnChain
       ? "#28a745"
-      : "#6f42c1"
+      : "#6f42c1",
+    opacity: issuingId === app._id ? 0.7 : 1,
+    cursor: issuingId === app._id ? "not-allowed" : "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: 8
   }}
+  disabled={issuingId === app._id}
   onClick={async () => {
-    // ✅ If already registered → just open certificate
     if (app.certificate?.registeredOnChain) {
       if (app.certificate?.certificateUrl) {
         window.open(app.certificate.certificateUrl, "_blank");
@@ -635,8 +648,9 @@ const formatLivePhotoLabel = (key: string) => {
       return;
     }
 
-    // 🔥 Otherwise register on blockchain
     try {
+      setIssuingId(app._id);   // 🔥 START LOADER
+
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/admin/blockchain/register`,
         {
@@ -654,7 +668,7 @@ const formatLivePhotoLabel = (key: string) => {
       const data = await res.json();
 
       if (data.success) {
-        await loadApplications(); // refresh list
+        await loadApplications();
         showToast("Blockchain registration successful", "success");
       } else {
         showToast(data.message || "Blockchain failed", "error");
@@ -663,10 +677,18 @@ const formatLivePhotoLabel = (key: string) => {
     } catch (err) {
       console.log(err);
       showToast("Blockchain error occurred", "error");
+    } finally {
+      setIssuingId(null);  // 🔥 STOP LOADER
     }
   }}
 >
-  {app.certificate?.registeredOnChain
+  {issuingId === app._id && (
+    <span style={btnSpinner}></span>
+  )}
+
+  {issuingId === app._id
+    ? "Generating..."
+    : app.certificate?.registeredOnChain
     ? "View Certificate"
     : "Generate Certificate"}
 </button>
@@ -735,6 +757,7 @@ const formatLivePhotoLabel = (key: string) => {
 >
   {app.certificate?.registeredOnChain ? "Generate Goshvara" : "Goshvara 🔒"}
 </button>
+</div>
             </td>
           </tr>
         );
@@ -1509,4 +1532,20 @@ const reviewValue = {
   fontSize: 15,
   fontWeight: 500,
   color: "#111"
+};
+
+const btnSpinner = {
+  width: 14,
+  height: 14,
+  border: "2px solid white",
+  borderTop: "2px solid transparent",
+  borderRadius: "50%",
+  animation: "spin 0.8s linear infinite"
+};
+
+const actionContainer = {
+  display: "flex",
+  flexWrap: "wrap" as const,
+  gap: 8,
+  alignItems: "center"
 };
