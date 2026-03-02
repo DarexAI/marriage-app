@@ -14,6 +14,47 @@ type Official = {
   image: string;
 };
 
+const captureFingerprint = async () => {
+  try {
+    const response = await fetch("https://127.0.0.1:11100/rd/capture", {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/xml"
+      },
+      body: `<?xml version="1.0"?>
+<Capture pidVer="2.0" timeout="10000" env="P">
+  <Opts fCount="1" fType="2" iCount="0" format="0" pidVer="2.0"/>
+  <Demo/>
+  <CustOpts/>
+</Capture>`
+    });
+
+    const pidXml = await response.text();
+
+    console.log("PID XML:", pidXml);
+
+    // Optional: check if capture failed
+    if (!pidXml.includes("<PidData")) {
+      alert("Capture failed");
+      return;
+    }
+
+    await fetch("https://applogix.cloud/api/store-pid", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ pidXml })
+    });
+
+    alert("Fingerprint captured and stored ✅");
+
+  } catch (error) {
+    console.error("Capture error:", error);
+    alert("RD not reachable");
+  }
+};
+
 const officials: Official[] = [
   {
     id: 1,
@@ -35,7 +76,14 @@ const officials: Official[] = [
   },
 ];
   return (
-    <div style={{ fontFamily: "Segoe UI, sans-serif", background: "#f2f4f7" }}>
+  <div
+    style={{
+      fontFamily: "Segoe UI, sans-serif",
+      background: "#f2f4f7",
+      minHeight: "100vh",
+      overflowX: "hidden"
+    }}
+  >
       
       {/* NAVBAR */}
   {/* Navbar */}
@@ -45,7 +93,8 @@ const officials: Official[] = [
     display: "flex",
     justifyContent: "flex-end",
     gap: 12,
-    padding: "0 40px",
+    padding: "10px 15px",
+flexWrap: "wrap",
     marginTop: 10,
   }}
 >
@@ -64,6 +113,21 @@ const officials: Official[] = [
   >
     Super Admin Login
   </button>
+  <button
+  onClick={captureFingerprint}
+  style={{
+    background: "#ff7a00",
+    color: "white",
+    border: "none",
+    padding: "10px 18px",
+    borderRadius: 8,
+    cursor: "pointer",
+    fontWeight: 600,
+    transition: "0.3s",
+  }}
+>
+  Test Capture
+</button>
 
   <button
     onClick={() => navigate("/officer-login")}
@@ -86,21 +150,23 @@ const officials: Official[] = [
       {/* MAIN CONTENT */}
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "1.2fr 1fr",
-          gap: 30,
-          padding: 40,
+display: "grid",
+gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+gap: 20,
+padding: "20px 15px",
+boxSizing: "border-box",
         }}
       >
         {/* LEFT CARD */}
-        <div
-          style={{
-            background: "white",
-            borderRadius: 16,
-            overflow: "hidden",
-            boxShadow: "0 6px 18px rgba(0,0,0,0.1)",
-          }}
-        >
+       <div
+  style={{
+    background: "white",
+    borderRadius: 16,
+    overflow: "hidden",
+    boxShadow: "0 6px 18px rgba(0,0,0,0.1)",
+    width: "100%"
+  }}
+>
           {/* PROFILE HEADER */}
           <div
             style={{
@@ -112,13 +178,14 @@ const officials: Official[] = [
           >
             <img
               src="./p1.jfif"
-              style={{
-                borderRadius: "50%",
-                border: "4px solid white",
-                marginBottom: 10,
-                height:"100px",
-                width:"90px"
-              }}
+             style={{
+  borderRadius: "50%",
+  border: "4px solid white",
+  marginBottom: 10,
+  height: "100px",
+  width: "100px",
+  maxWidth: "100%"
+}}
             />
 
             <h2>Mrs. Manisha Awhale (IAS)</h2>
@@ -177,6 +244,7 @@ const officials: Official[] = [
               borderRadius: 16,
               padding: 20,
               boxShadow: "0 6px 18px rgba(0,0,0,0.1)",
+              width: "100%",
             }}
           >
             <h3>📊 Marriage Certificates Statistics</h3>
@@ -184,7 +252,7 @@ const officials: Official[] = [
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr",
+                gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
                 gap: 15,
                 marginTop: 15,
               }}
@@ -225,6 +293,7 @@ const officials: Official[] = [
               borderRadius: 16,
               padding: 20,
               boxShadow: "0 6px 18px rgba(0,0,0,0.1)",
+              width: "100%",
             }}
           >
             <h3>Contact Information</h3>

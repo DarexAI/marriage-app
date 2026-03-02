@@ -10,12 +10,24 @@ const [toast, setToast] = useState<{
   type: "success" | "error";
 } | null>(null);
 const [reviewApp, setReviewApp] = useState<any>(null);
+const [records, setRecords] = useState<any[]>([]);
+const [recordFilter, setRecordFilter] = useState("month");
   const [overview, setOverview] = useState<any>({});
   const [officers, setOfficers] = useState<any[]>([]);
   const [citizens, setCitizens] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
 const [showAddOfficer, setShowAddOfficer] = useState(false);
 const [issuingId, setIssuingId] = useState<string | null>(null);
+
+const [isMobile, setIsMobile] = useState(false);
+
+useEffect(() => {
+  const check = () => setIsMobile(window.innerWidth < 768);
+  check();
+  window.addEventListener("resize", check);
+  return () => window.removeEventListener("resize", check);
+}, []);
+
 const [editOfficer, setEditOfficer] = useState<any>(null);
 const [approvingId, setApprovingId] = useState<string | null>(null);
 const [officerForm, setOfficerForm] = useState({
@@ -52,6 +64,16 @@ const [officerForm, setOfficerForm] = useState({
   }, 3000);
 };
 
+const loadRecords = async (filter = "month") => {
+  const res = await fetch(
+    `${import.meta.env.VITE_API_URL}/admin/records?filter=${filter}`,
+    { headers: { Authorization: token || "" } }
+  );
+
+  const data = await res.json();
+  if (data.success) setRecords(data.records);
+};
+
   const loadCitizens = async () => {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/citizens`, {
       headers: { Authorization: token || "" }
@@ -78,6 +100,83 @@ const loadApplications = async () => {
     console.log("Application load error", err);
     setApplications([]); // prevent crash
   }
+};
+
+const printRecords = () => {
+  const printWindow = window.open("", "", "width=1000,height=700");
+
+  if (!printWindow) return;
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Blockchain Certificate Records</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 30px;
+          }
+
+          h2 {
+            text-align: center;
+            margin-bottom: 20px;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+
+          th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            font-size: 12px;
+            text-align: left;
+          }
+
+          th {
+            background: #f2f2f2;
+          }
+
+          .small {
+            font-size: 10px;
+            word-break: break-all;
+          }
+        </style>
+      </head>
+
+      <body>
+        <h2>Blockchain Certificate Records</h2>
+        <p><b>Filter:</b> ${recordFilter.toUpperCase()}</p>
+
+        <table>
+          <tr>
+            <th>CPAN</th>
+            <th>Blockchain Status</th>
+            <th>From</th>
+            <th>To</th>
+          </tr>
+
+          ${records
+            .map(
+              r => `
+              <tr>
+                <td>${r.cpan}</td>
+                <td>${r.blockchainStatus}</td>
+                <td class="small">${r.from}</td>
+                <td class="small">${r.to}</td>
+              </tr>
+            `
+            )
+            .join("")}
+        </table>
+
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.print();
 };
 
 const addOfficer = async () => {
@@ -264,11 +363,12 @@ const formatLivePhotoLabel = (key: string) => {
 
         {/* MAIN TABS */}
         <div style={tabBar}>
-          {["overview", "users", "applications"].map(t => (
+          {["overview", "users", "applications", "records"].map(t => (
             <button
               key={t}
               onClick={() => {
                 setTab(t);
+                if (t === "records") loadRecords(recordFilter);
                 if (t === "users") {
                   loadOfficers();
                   loadCitizens();
@@ -285,6 +385,7 @@ const formatLivePhotoLabel = (key: string) => {
               {t === "overview" && "Overview"}
               {t === "users" && "User Management"}
               {t === "applications" && "Applications"}
+              {t === "records" && "Records"}
             </button>
           ))}
         </div>
@@ -410,8 +511,18 @@ const formatLivePhotoLabel = (key: string) => {
           <div style={panel}>
             <h3>Physically Verified Applications</h3>
 
-<div style={tableWrapper}>
-  <table style={tableStyle}>
+<div
+  style={{
+    ...tableWrapper,
+    overflowX: isMobile ? "auto" : "visible"
+  }}
+>
+  <table
+    style={{
+      ...tableStyle,
+      minWidth: isMobile ? 900 : "100%"
+    }}
+  >
     <thead>
       <tr>
         <th style={th}>CPAN</th>
@@ -633,6 +744,106 @@ const formatLivePhotoLabel = (key: string) => {
 </div>
           </div>
         )}
+        {tab === "records" && (
+  <div style={panel}>
+    <h3>Blockchain Certificate Records</h3>
+
+    {/* FILTER */}
+    <div style={{ marginBottom: 20, display: "flex", gap: 12 }}>
+      <select
+        value={recordFilter}
+        onChange={(e) => {
+          setRecordFilter(e.target.value);
+          loadRecords(e.target.value);
+        }}
+        style={input}
+      >
+        <option value="today">Today</option>
+        <option value="week">Last 7 Days</option>
+        <option value="month">Last 30 Days</option>
+      </select>
+      <button
+  style={primaryBtn}
+  onClick={printRecords}
+>
+  Print Records
+</button>
+    </div>
+
+    {/* TABLE */}
+<div
+  style={{
+    ...tableWrapper,
+    overflowX: isMobile ? "auto" : "visible",
+    padding: isMobile ? 10 : 20
+  }}
+>
+  <table
+    style={{
+      ...tableStyle,
+      minWidth: isMobile ? 950 : "100%"
+    }}
+  >
+        <thead>
+          <tr>
+            <th style={th}>CPAN</th>
+           
+            <th style={th}>Blockchain Status</th>
+            <th style={th}>From</th>
+            <th style={th}>To</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {records.map((r, i) => (
+            <tr key={i} style={row}>
+              <td style={td}>{r.cpan}</td>
+              <td style={td}>
+                <span
+                  style={{
+                    ...statusBadge,
+                    background:
+                      r.blockchainStatus === "confirmed"
+                        ? "#d4edda"
+                        : r.blockchainStatus === "pending"
+                        ? "#fff3cd"
+                        : "#f8d7da"
+                  }}
+                >
+                  {r.blockchainStatus}
+                </span>
+              </td>
+<td
+  style={{
+    ...td,
+    fontSize: 12,
+    whiteSpace: "nowrap",
+    maxWidth: 280,
+    overflow: "hidden",
+    textOverflow: "ellipsis"
+  }}
+>
+                {r.from}
+              </td>
+<td
+  style={{
+    ...td,
+    fontSize: 12,
+    whiteSpace: "nowrap",
+    maxWidth: 280,
+    overflow: "hidden",
+    textOverflow: "ellipsis"
+  }}
+>
+                {r.to}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
       </div>
       
 {reviewApp && (
@@ -951,17 +1162,22 @@ export default SuperAdminDashboard;
 /* ===================== STYLES ===================== */
 
 const container = {
-  padding: 40,
+  padding: 20,
   background: "#f4f6f9",
-  minHeight: "100vh"
+  minHeight: "100vh",
+  width: "100%",
+  maxWidth: "100vw",
+  boxSizing: "border-box" as const,
+  overflowX: "hidden"
 };
 
 const header = {
   display: "flex",
   justifyContent: "space-between",
-  marginBottom: 20
+  marginBottom: 20,
+  flexWrap: "wrap" as const,
+  gap: 10
 };
-
 const headerBtn = {
   marginLeft: 10,
   padding: "8px 14px",
@@ -976,7 +1192,9 @@ const tabBar = {
   display: "flex",
   gap: 25,
   borderBottom: "2px solid #ddd",
-  marginBottom: 25
+  marginBottom: 25,
+  overflowX: "auto" as const,
+  whiteSpace: "nowrap" as const
 };
 
 const tabBtn = {
@@ -984,11 +1202,14 @@ const tabBtn = {
   border: "none",
   padding: "12px 0",
   fontWeight: 600,
-  cursor: "pointer"
+  cursor: "pointer",
+  minWidth: 120,
+  flexShrink: 0
 };
 
 const cardRow = {
-  display: "flex",
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
   gap: 20,
   marginBottom: 25,
   color:"black"
@@ -1018,9 +1239,9 @@ const activeBadge = {
 
 const panel = {
   background: "#fff",
-  padding: 25,
-  borderRadius: 12,
-  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+  padding: 20,
+  width: "100%",
+  boxSizing: "border-box",
   color:"black"
 };
 
@@ -1108,7 +1329,8 @@ const modal = {
   background: "#fff",
   padding: 30,
   borderRadius: 12,
-  width: 400,
+  width: "95%",
+  maxWidth: 400,
   color:"black"
 };
 
@@ -1193,9 +1415,10 @@ const certificateBtn = {
 
 const reviewModal = {
   background: "#fff",
-  padding: 30,
+  padding: 20,
   borderRadius: 14,
-  width: "85%",
+  width: "95%",
+  maxWidth: 1100,
   maxHeight: "90vh",
   overflowY: "auto",
 };

@@ -187,7 +187,8 @@ setShowSlots(false);
         style={{
           minHeight: "80vh",
           background: "#f4f6f9",
-          padding: 40,
+          padding: "20px 15px",
+boxSizing: "border-box",
           fontFamily: "Segoe UI",
           color: "black",
         }}
@@ -200,9 +201,11 @@ setShowSlots(false);
     borderRadius: 12,
     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
     marginBottom: 20,
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center"
+   display: "flex",
+justifyContent: "space-between",
+alignItems: "center",
+flexWrap: "wrap",
+gap: 15
   }}
 >
   {/* LEFT SIDE INFO */}
@@ -313,7 +316,9 @@ cursor: selectedSlot ? "not-allowed" : "pointer",
         key={slot._id}
         style={{
           display: "flex",
-          justifyContent: "space-between",
+justifyContent: "space-between",
+flexWrap: "wrap",
+gap: 10,
           background: "#fff",
           padding: 12,
           borderRadius: 8,
@@ -333,6 +338,8 @@ cursor: selectedSlot ? "not-allowed" : "pointer",
             border: "none",
             padding: "6px 14px",
             borderRadius: 6,
+            width: "100%",
+maxWidth: 100,
             cursor: "pointer"
           }}
         >
@@ -346,12 +353,14 @@ cursor: selectedSlot ? "not-allowed" : "pointer",
 
         {/* TABS */}
         <div
-          style={{
-            display: "flex",
-            gap: 20,
-            marginBottom: 25,
-            borderBottom: "2px solid #ddd",
-          }}
+         style={{
+  display: "flex",
+  gap: 10,
+  marginBottom: 25,
+  borderBottom: "2px solid #ddd",
+  overflowX: "auto",
+  whiteSpace: "nowrap"
+}}
         >
           {["profile", "applications", "apply", "notifications"].map((t) => (
            <button
@@ -366,21 +375,23 @@ cursor: selectedSlot ? "not-allowed" : "pointer",
       setLoadingTab(null);
     }, 800);
   }}
-  style={{
-    border: "none",
-    background: "none",
-    padding: "10px 15px",
-    cursor: "pointer",
-    fontWeight: 600,
-    borderBottom: tab === t ? "3px solid #3b6edc" : "none",
-    color: tab === t ? "#3b6edc" : "black",
-    position: "relative",
-    minWidth: 150, // 🔥 prevents shrink
-    height: 40,
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center"
-  }}
+ style={{
+  border: "none",
+  background: "none",
+  padding: "10px 15px",
+  cursor: "pointer",
+  fontWeight: 600,
+  borderBottom: tab === t ? "3px solid #3b6edc" : "none",
+  color: tab === t ? "#3b6edc" : "black",
+  position: "relative",
+
+  minWidth: 120,      // 🔥 ADD THIS
+  flexShrink: 0,      // 🔥 ADD THIS
+  height: 40,
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center"
+}}
 >
   {/* TEXT */}
   <span style={{ opacity: loadingTab === t ? 0 : 1 }}>
@@ -626,7 +637,9 @@ cursor: selectedSlot ? "not-allowed" : "pointer",
           documents.receiptUrl ||
           documents.goshvaraUrl) ? (
 
-          <div style={{ display: "flex", gap: 15, marginTop: 20 }}>
+          <div style={{ display: "flex",
+gap: 10,
+flexWrap: "wrap", marginTop: 20 }}>
 
             {documents.certificateUrl && (
               <button
@@ -694,7 +707,7 @@ cursor: selectedSlot ? "not-allowed" : "pointer",
 
 const cardStyle: React.CSSProperties = {
   background: "white",
-  padding: 25,
+  padding: "20px 15px",
   borderRadius: 12,
   boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
 };
@@ -714,18 +727,18 @@ const tabLoaderOverlay: React.CSSProperties = {
 
 const toastStyle: React.CSSProperties = {
   position: "fixed",
-  top: 20,
-  right: 20,
+  top: 15,
+  right: 15,
+  left: 15, // 🔥 Important for mobile
   background: "#28a745",
   color: "white",
-  padding: "12px 18px",
+  padding: "12px 16px",
   borderRadius: 8,
   display: "flex",
+  justifyContent: "space-between",
   alignItems: "center",
-  gap: 15,
   boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
   zIndex: 9999,
-  animation: "fadeIn 0.3s ease-in-out"
 };
 
 const docBtnStyle: React.CSSProperties = {

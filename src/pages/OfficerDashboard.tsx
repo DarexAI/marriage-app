@@ -84,7 +84,17 @@ const [officer] = useState<any>(() => {
   const stored = localStorage.getItem("officer");
   return stored ? JSON.parse(stored) : null;
 });
+const [isMobile, setIsMobile] = useState(false);
 
+useEffect(() => {
+  const checkScreen = () => {
+    setIsMobile(window.innerWidth < 768);
+  };
+
+  checkScreen();
+  window.addEventListener("resize", checkScreen);
+  return () => window.removeEventListener("resize", checkScreen);
+}, []);
 useEffect(() => {
   fetch(`${import.meta.env.VITE_API_URL}/slots`)
     .then(res => res.json())
@@ -349,6 +359,16 @@ const openCamera = async (setter: any) => {
   setCameraOpen(true);
 };
 
+const modalStyle = {
+  background: "#fff",
+  padding: 30,
+  borderRadius: 12,
+  width: "95%",
+  maxWidth: isMobile ? "95%" : 900,
+  maxHeight: "90vh",
+  overflow: "auto",
+  position: "relative" as const
+};
   return (
     <>
           <Navbar />
@@ -359,14 +379,25 @@ const openCamera = async (setter: any) => {
     background: "#f4f6f9",
     color: "black",
     minHeight: "100vh",
-    boxSizing: "border-box"
+    boxSizing: "border-box",
+    overflowX: "hidden",
+    width: "100%",
+maxWidth: "100vw",
   }}
 >
 
       
       {/* HEADER */}
 <div style={header}>
-  <div style={{ display: "flex", justifyContent: "space-between" }}>
+  <div
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 10
+  }}
+>
     <div>
       <h2>
         Officer Dashboard – {officer?.name} ({officer?.officerId})
@@ -499,13 +530,20 @@ onClick={() => {
   <div style={card}>
     <h3>Applications</h3>
 
-    <table
-      width="100%"
-      style={{
-        marginTop: 15,
-        borderCollapse: "collapse"
-      }}
-      >
+  <div
+  style={{
+    width: "100%",
+    overflowX: isMobile ? "auto" : "visible",
+    WebkitOverflowScrolling: "touch"
+  }}
+>
+  <table
+    style={{
+      borderCollapse: "collapse",
+      width: "100%",
+      minWidth: isMobile ? 750 : "100%"
+    }}
+  >
       <thead>
         <tr style={{ background: "#f1f3f6" }}>
           <th style={th}>CPAN</th>
@@ -559,7 +597,15 @@ onClick={() => {
             </td>
 
             {/* Action */}
-           <td style={td}>
+           <td
+  style={{
+    ...td,
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 6,
+    minWidth: isMobile ? 200 : "auto"
+  }}
+>
   <button
     style={viewBtn}
     onClick={async () => {
@@ -715,6 +761,7 @@ onClick={() => {
         ))}
       </tbody>
     </table>
+    </div>
   </div>
 )}
 
@@ -725,13 +772,20 @@ onClick={() => {
   <div style={card}>
     <h3>Upcoming Appointments</h3>
 
-    <table
-      width="100%"
-      style={{
-        marginTop: 15,
-        borderCollapse: "collapse"
-      }}
-    >
+<div
+  style={{
+    width: "100%",
+    overflowX: isMobile ? "auto" : "visible",
+    WebkitOverflowScrolling: "touch"
+  }}
+>
+  <table
+    style={{
+      borderCollapse: "collapse",
+      width: "100%",
+      minWidth: isMobile ? 750 : "100%"
+    }}
+  >
       <thead>
         <tr style={{ background: "#f1f3f6" }}>
           <th style={th}>CPAN</th>
@@ -831,6 +885,7 @@ onClick={() => {
           ))}
       </tbody>
     </table>
+    </div>
 
     {applications.filter(
       a => a.status === "verification_scheduled"
@@ -844,7 +899,7 @@ onClick={() => {
 {/* RESCHEDULE MODAL */}
 {rescheduleApp && (
   <div style={overlay}>
-    <div style={modal}>
+    <div style={modalStyle}>
       <button
   style={closeIconBtn}
   onClick={() => setRescheduleApp(null)}
@@ -892,7 +947,7 @@ onClick={() => {
 
 {verifyApp && (
   <div style={overlay}>
-    <div style={modal}>
+    <div style={modalStyle}>
       <button
   style={closeIconBtn}
   onClick={() => setVerifyApp(null)}
@@ -1042,13 +1097,20 @@ onClick={async () => {
   <div style={card}>
     <h3>Citizens Records</h3>
 
-    <table
-      width="100%"
+    <div
       style={{
-        marginTop: 15,
-        borderCollapse: "collapse"
+        width: "100%",
+        overflowX: isMobile ? "auto" : "visible",
+        WebkitOverflowScrolling: "touch"
       }}
     >
+      <table
+        style={{
+          borderCollapse: "collapse",
+          width: "100%",
+          minWidth: isMobile ? 750 : "100%"
+        }}
+      >
       <thead>
         <tr style={{ background: "#f1f3f6" }}>
           {/* <th style={th}>CPAN</th> */}
@@ -1103,6 +1165,7 @@ onClick={async () => {
         ))}
       </tbody>
     </table>
+    </div>
   </div>
 )}
 
@@ -1163,7 +1226,20 @@ onClick={async () => {
     </div>
 
     {/* TABLE */}
-    <table width="100%" style={{ borderCollapse: "collapse" }}>
+<div
+  style={{
+    width: "100%",
+    overflowX: isMobile ? "auto" : "visible",
+    WebkitOverflowScrolling: "touch"
+  }}
+>
+  <table
+    style={{
+      borderCollapse: "collapse",
+      width: "100%",
+      minWidth: isMobile ? 750 : "100%"
+    }}
+  >
       <thead>
         <tr style={{ background: "#f1f3f6" }}>
           <th style={th}>CPAN</th>
@@ -1196,13 +1272,16 @@ onClick={async () => {
         ))}
       </tbody>
     </table>
-  </div>
+    </div>
+    </div>
+
+
 )}
 
 
 {viewCitizen && (
   <div style={overlay}>
-    <div style={modal}>
+    <div style={modalStyle}>
       <button
   style={closeIconBtn}
   onClick={() => setViewCitizen(null)}
@@ -1235,7 +1314,7 @@ onClick={async () => {
       {/* VIEW APPLICATION MODAL */}
 {viewApp && (
   <div style={overlay}>
-    <div style={modal}>
+    <div style={modalStyle}>
       <button
   style={closeIconBtn}
   onClick={() => setViewApp(null)}
@@ -1266,7 +1345,7 @@ onClick={async () => {
       {/* SLOT AVAILABILITY MODAL */}
       {slotModal && (
         <div style={overlay}>
-          <div style={modal}>
+          <div style={modalStyle}>
             <h3>Add Verification Slot</h3>
 
             <label>Date</label>
@@ -1309,7 +1388,7 @@ onClick={async () => {
 
 {cameraOpen && (
   <div style={overlay}>
-    <div style={modal}>
+    <div style={modalStyle}>
       <button
   style={closeIconBtn}
   onClick={() => setCameraOpen(null)}
@@ -1357,7 +1436,7 @@ onClick={async () => {
 
 {deleteConfirm && (
   <div style={overlay}>
-    <div style={{ ...modal, width: 400 }}>
+    <div style={{ ...modalStyle, maxWidth: 400 }}>
       <button
         style={closeIconBtn}
         onClick={() => setDeleteConfirm(null)}
@@ -1447,15 +1526,18 @@ const header = {
   padding: 20,
   borderRadius: 12,
   marginBottom: 20,
-  color: "black"
+  color: "black",
+  width: "100%",
+  boxSizing: "border-box",
+  overflow: "hidden"
 };
-
 const card = {
   background: "#fff",
   padding: 20,
-  borderRadius: 12
+  borderRadius: 12,
+  width: "100%",
+  boxSizing: "border-box",
 };
-
 const overlay = {
   position: "fixed" as const,
   top: 0,
@@ -1469,15 +1551,6 @@ const overlay = {
   color:"black"
 };
 
-const modal = {
-  background: "#fff",
-  padding: 30,
-  borderRadius: 12,
-  width: "80%",
-  maxHeight: "90vh",
-  overflow: "auto",
-   position: "relative" as const  
-};
 const closeIconBtn = {
   position: "absolute" as const,
   top: 15,
@@ -1517,9 +1590,11 @@ const closeBtn = {
 
 const tabBar = {
   display: "flex",
-  gap: 20,
+  gap: 15,
   marginBottom: 20,
-  borderBottom: "2px solid #ddd"
+  borderBottom: "2px solid #ddd",
+  overflowX: "auto",
+  whiteSpace: "nowrap"
 };
 
 const tabBtn = {
@@ -1528,7 +1603,9 @@ const tabBtn = {
   padding: "12px 20px",
   fontWeight: 600,
   cursor: "pointer",
-  color: "black"
+  color: "black",
+  minWidth: 120,
+flexShrink: 0,
 };
 
 
@@ -1627,7 +1704,8 @@ const certificateBtn = {
 const popupOverlay = {
   position: "fixed" as const,
   top: 20,
-  right: 20,
+  left: 15,
+  right: 15,
   zIndex: 2000
 };
 

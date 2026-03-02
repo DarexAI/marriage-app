@@ -18,6 +18,16 @@ const [date, setDate] = useState("");
 const [startTime, setStartTime] = useState("");
 const [endTime, setEndTime] = useState("");
 const navigate = useNavigate();
+
+const [isMobile, setIsMobile] = useState(false);
+
+useEffect(() => {
+  const check = () => setIsMobile(window.innerWidth < 768);
+  check();
+  window.addEventListener("resize", check);
+  return () => window.removeEventListener("resize", check);
+}, []);
+
 const fetchSlots = async () => {
   const officer = JSON.parse(localStorage.getItem("officer") || "{}");
 
@@ -104,12 +114,16 @@ const fetchSlots = async () => {
   return (
     <>
     <Navbar/>
-    <div
+<div
   style={{
-    padding: 20,
+    padding: isMobile ? 15 : 20,
     background: "#ffffff",
     color: "#000000",
-    minHeight: "100vh"
+    minHeight: "100vh",
+    width: "100%",
+    maxWidth: "100vw",
+    boxSizing: "border-box",
+    overflowX: "hidden"
   }}
 >
   <button
@@ -120,14 +134,26 @@ const fetchSlots = async () => {
 </button>
       <h2>Slot Management</h2>
 
-     <table style={tableStyle}>
+<div
+  style={{
+    width: "100%",
+    overflowX: isMobile ? "auto" : "visible",
+    WebkitOverflowScrolling: "touch"
+  }}
+>
+  <table
+    style={{
+      ...tableStyle,
+      minWidth: isMobile ? 650 : "100%"
+    }}
+  >
         <thead>
           <tr>
-            <th style={thStyle}>DateDate</th>
-            <th style={thStyle}>DateTime</th>
-            <th style={thStyle}>DateStatus</th>
-            <th style={thStyle}>DateCPAN</th>
-            <th style={thStyle}>DateAction</th>
+          <th style={thStyle}>Date</th>
+<th style={thStyle}>Time</th>
+<th style={thStyle}>Status</th>
+<th style={thStyle}>CPAN</th>
+<th style={thStyle}>Action</th>
           </tr>
         </thead>
 
@@ -193,6 +219,7 @@ const fetchSlots = async () => {
           ))}
         </tbody>
       </table>
+      </div>
 
       {/* Add Slot Button */}
       <div style={{ marginTop: 30 }}>
@@ -385,7 +412,8 @@ const modalNew = {
   background: "#fff",
   padding: 30,
   borderRadius: 16,
-  width: 380,
+ width: "95%",
+maxWidth: 380,
   boxShadow: "0 15px 40px rgba(0,0,0,0.15)",
   fontFamily: "Segoe UI"
 };

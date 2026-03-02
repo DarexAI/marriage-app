@@ -10,7 +10,7 @@ const officerDashboardRoutes = require("./routes/officerDashboardRoutes");
 const slotRoutes = require("./routes/slotRoutes"); // 👈 ADD THIS
 const citizenRoutes = require("./routes/citizenRoutes");
 const authRoutes = require("./routes/auth");
-
+const biometricRoutes = require("./routes/biometricRoutes");
 const app = express();
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
@@ -33,6 +33,8 @@ app.use("/api", require("./routes/upload"));
 app.use("/api/super-admin", require("./routes/superAdminAuth"));
 app.use("/api/admin", require("./routes/superAdmin"));
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", require("./routes/adminRecords"));
+app.use("/api", biometricRoutes);
 app.use("/api/officer", require("./routes/dashboardStats"));
 app.get("/", (req, res) => {
   res.send("API Running Successfully");

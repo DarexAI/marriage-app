@@ -19,26 +19,59 @@ const Register: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+const validateForm = () => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^[6-9]\d{9}$/; // Indian mobile numbers
+  const aadhaarRegex = /^\d{12}$/;
 
-  const handleRegister = async () => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
-      });
+  if (!emailRegex.test(form.email)) {
+    alert("Please enter a valid email address");
+    return false;
+  }
 
-      const data = await res.json();
-      alert(data.message || "Registered successfully");
+  if (!phoneRegex.test(form.phone)) {
+    alert("Please enter a valid 10-digit mobile number");
+    return false;
+  }
 
-      if (data.success) navigate("/login");
-    } catch (error) {
-      alert("Registration failed");
-      console.error(error);
-    }
-  };
+  if (!aadhaarRegex.test(form.aadhaar)) {
+    alert("Aadhaar must be exactly 12 digits");
+    return false;
+  }
+
+  if (form.password.length < 6) {
+    alert("Password must be at least 6 characters");
+    return false;
+  }
+
+  if (form.password !== form.confirmPassword) {
+    alert("Passwords do not match");
+    return false;
+  }
+
+  return true;
+};
+const handleRegister = async () => {
+  if (!validateForm()) return;
+
+  try {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(form),
+    });
+
+    const data = await res.json();
+    alert(data.message || "Registered successfully");
+
+    if (data.success) navigate("/login");
+  } catch (error) {
+    alert("Registration failed");
+    console.error(error);
+  }
+};
 
   return (
     <>
@@ -52,11 +85,13 @@ const Register: React.FC = () => {
         background: "#f4f6f9",
         fontFamily: "Segoe UI",
         color: "black",
+        padding: "20px",
       }}
       >
       <div
         style={{
-          width: 380,
+          width: "100%",
+maxWidth: 400,
           background: "white",
           padding: 30,
           borderRadius: 12,
@@ -174,12 +209,13 @@ const Register: React.FC = () => {
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
-  padding: 10,
+  padding: "12px",
   borderRadius: 6,
   border: "1px solid #ccc",
   marginBottom: 15,
   background: "#f5f6f8",
   color: "black",
+  fontSize: "14px",
 };
 
 export default Register;
