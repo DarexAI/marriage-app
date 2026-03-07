@@ -21,8 +21,8 @@ const Register: React.FC = () => {
   };
 const validateForm = () => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const phoneRegex = /^[6-9]\d{9}$/; // Indian mobile numbers
-  const aadhaarRegex = /^\d{12}$/;
+  const phoneRegex = /^[0-9]{10}$/;     // exactly 10 digits
+  const aadhaarRegex = /^[0-9]{12}$/;   // exactly 12 digits
 
   if (!emailRegex.test(form.email)) {
     alert("Please enter a valid email address");
@@ -30,12 +30,12 @@ const validateForm = () => {
   }
 
   if (!phoneRegex.test(form.phone)) {
-    alert("Please enter a valid 10-digit mobile number");
+    alert("Mobile number must be exactly 10 digits");
     return false;
   }
 
   if (!aadhaarRegex.test(form.aadhaar)) {
-    alert("Aadhaar must be exactly 12 digits");
+    alert("Aadhaar number must be exactly 12 digits");
     return false;
   }
 
@@ -130,20 +130,26 @@ maxWidth: 400,
         />
 
         <label style={{ color: "black" }}>Mobile Number</label>
-        <input
-          name="phone"
-          placeholder="Enter your mobile number"
-          style={inputStyle}
-          onChange={handleChange}
-        />
+<input
+  name="phone"
+  placeholder="Enter your mobile number"
+  style={inputStyle}
+  maxLength={10}
+  pattern="[0-9]*"
+  inputMode="numeric"
+  onChange={handleChange}
+/>
 
         <label style={{ color: "black" }}>Aadhaar Number</label>
-        <input
-          name="aadhaar"
-          placeholder="Enter 12-digit Aadhaar number"
-          style={inputStyle}
-          onChange={handleChange}
-          />
+<input
+  name="aadhaar"
+  placeholder="Enter 12-digit Aadhaar number"
+  style={inputStyle}
+  maxLength={12}
+  pattern="[0-9]*"
+  inputMode="numeric"
+  onChange={handleChange}
+/>
 
         <label style={{ color: "black" }}>Password</label>
         <input

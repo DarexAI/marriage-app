@@ -67,6 +67,13 @@ const [bridePhoto, setBridePhoto] = useState("");
 const [w1Photo, setW1Photo] = useState("");
 const [w2Photo, setW2Photo] = useState("");
 const [w3Photo, setW3Photo] = useState("");
+const [groomFingerprint, setGroomFingerprint] = useState("");
+const [brideFingerprint, setBrideFingerprint] = useState("");
+const [w1Fingerprint, setW1Fingerprint] = useState("");
+const [w2Fingerprint, setW2Fingerprint] = useState("");
+const [w3Fingerprint, setW3Fingerprint] = useState("");
+const [fingerprintImage, setFingerprintImage] = useState("");
+const [fingerprintTemplate, setFingerprintTemplate] = useState("");
 const [loadingTab, setLoadingTab] = useState<string | null>(null);
 const [certStatusMap, setCertStatusMap] = useState<any>({});
 const [selectedSlot, setSelectedSlot] = useState("");
@@ -347,7 +354,56 @@ const uploadToCloudinary = async (image: string) => {
   return data.url;
 };
 
+const captureFingerprint = async (setter: any) => {
+  try {
+    const res = await fetch("http://localhost:18080/fingerprint");
+    const data = await res.json();
 
+    if (data.success) {
+      const image = "data:image/bmp;base64," + data.image;
+
+      setter(image);
+
+      setPopup({
+        message: "Fingerprint captured successfully",
+        type: "success"
+      });
+
+    } else {
+      setPopup({
+        message: "Fingerprint capture failed",
+        type: "error"
+      });
+    }
+
+  } catch {
+    setPopup({
+      message: "Fingerprint service not running",
+      type: "error"
+    });
+  }
+};
+
+
+const uploadFingerprint = async (image: string, person: string) => {
+  if (!image) return;
+
+  const blob = await (await fetch(image)).blob();
+
+  const formData = new FormData();
+
+  formData.append("fingerprint", blob, "fingerprint.bmp");
+  formData.append("applicationId", verifyApp._id);
+  formData.append("person", person);
+
+  await fetch(
+    `${import.meta.env.VITE_API_URL}/uploadFingerprint`,
+    {
+      method: "POST",
+      body: formData
+    }
+  );
+};
 
 const openCamera = async (setter: any) => {
   const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -987,56 +1043,120 @@ onClick={() => {
       <th style={{ padding: 10, textAlign: "left" }}>Person</th>
       <th style={{ padding: 10, textAlign: "left" }}>Capture</th>
       <th style={{ padding: 10, textAlign: "left" }}>Preview</th>
+      <th style={{ padding: 10 }}>Fingerprint Capture</th>
+<th style={{ padding: 10 }}>Fingerprint Preview</th>
     </tr>
   </thead>
 
-  <tbody>
-    {[
-      { label: "Groom", setter: setGroomPhoto, photo: groomPhoto },
-      { label: "Bride", setter: setBridePhoto, photo: bridePhoto },
-      { label: "Witness 1", setter: setW1Photo, photo: w1Photo },
-      { label: "Witness 2", setter: setW2Photo, photo: w2Photo },
-      { label: "Witness 3", setter: setW3Photo, photo: w3Photo }
-    ].map(({ label, setter, photo }) => (
-      <tr key={label} style={{ borderBottom: "1px solid #eee" }}>
-        
-        {/* PERSON NAME */}
-        <td style={{ padding: 12, fontWeight: 600 }}>
-          {label}
-        </td>
+<tbody>
+{[
+  {
+    label: "Groom",
+    photo: groomPhoto,
+    photoSetter: setGroomPhoto,
+    fingerprint: groomFingerprint,
+    fingerprintSetter: setGroomFingerprint
+  },
+  {
+    label: "Bride",
+    photo: bridePhoto,
+    photoSetter: setBridePhoto,
+    fingerprint: brideFingerprint,
+    fingerprintSetter: setBrideFingerprint
+  },
+  {
+    label: "Witness 1",
+    photo: w1Photo,
+    photoSetter: setW1Photo,
+    fingerprint: w1Fingerprint,
+    fingerprintSetter: setW1Fingerprint
+  },
+  {
+    label: "Witness 2",
+    photo: w2Photo,
+    photoSetter: setW2Photo,
+    fingerprint: w2Fingerprint,
+    fingerprintSetter: setW2Fingerprint
+  },
+  {
+    label: "Witness 3",
+    photo: w3Photo,
+    photoSetter: setW3Photo,
+    fingerprint: w3Fingerprint,
+    fingerprintSetter: setW3Fingerprint
+  }
+].map(person => (
+<tr key={person.label} style={{ borderBottom: "1px solid #eee" }}>
 
-        {/* CAPTURE BUTTON */}
-        <td style={{ padding: 12 }}>
-          <button
-            style={scheduleBtn}
-            onClick={() => openCamera(setter)}
-          >
-            Capture
-          </button>
-        </td>
+<td style={{ padding: 12, fontWeight: 600 }}>
+{person.label}
+</td>
 
-        {/* IMAGE PREVIEW */}
-        <td style={{ padding: 12 }}>
-          {photo ? (
-            <img
-              src={photo}
-              alt="preview"
-              style={{
-                width: 120,
-                height: 120,
-                objectFit: "cover",
-                borderRadius: 8,
-                border: "1px solid #ddd"
-              }}
-            />
-          ) : (
-            <span style={{ color: "#888" }}>No photo</span>
-          )}
-        </td>
+{/* PHOTO CAPTURE */}
+<td style={{ padding: 12 }}>
+<button
+style={scheduleBtn}
+onClick={() => openCamera(person.photoSetter)}
+>
+Capture
+</button>
+</td>
 
-      </tr>
-    ))}
-  </tbody>
+{/* PHOTO PREVIEW */}
+<td style={{ padding: 12 }}>
+{person.photo ? (
+<img
+src={person.photo}
+style={{
+width: 120,
+height: 120,
+objectFit: "cover",
+borderRadius: 8,
+border: "1px solid #ddd"
+}}
+/>
+) : (
+<span style={{ color: "#888" }}>No photo</span>
+)}
+</td>
+
+{/* FINGERPRINT CAPTURE */}
+<td style={{ padding: 12 }}>
+<button
+style={{
+background: "#6a1b9a",
+color: "white",
+border: "none",
+padding: "6px 12px",
+borderRadius: 6
+}}
+onClick={() => captureFingerprint(person.fingerprintSetter)}
+>
+Capture
+</button>
+</td>
+
+{/* FINGERPRINT PREVIEW */}
+<td style={{ padding: 12 }}>
+{person.fingerprint ? (
+<img
+src={person.fingerprint}
+style={{
+width: 120,
+height: 120,
+objectFit: "contain",
+borderRadius: 8,
+border: "1px solid #ddd"
+}}
+/>
+) : (
+<span style={{ color: "#888" }}>No fingerprint</span>
+)}
+</td>
+
+</tr>
+))}
+</tbody>
 </table>
 
       <button
@@ -1051,6 +1171,14 @@ onClick={async () => {
   const w1Url = await uploadToCloudinary(w1Photo);
   const w2Url = await uploadToCloudinary(w2Photo);
   const w3Url = await uploadToCloudinary(w3Photo);
+
+
+    await uploadFingerprint(groomFingerprint, "groom");
+  await uploadFingerprint(brideFingerprint, "bride");
+  await uploadFingerprint(w1Fingerprint, "witness1");
+  await uploadFingerprint(w2Fingerprint, "witness2");
+  await uploadFingerprint(w3Fingerprint, "witness3");
+
 
   await fetch(
     `${import.meta.env.VITE_API_URL}/physical-verify`,
@@ -1417,6 +1545,7 @@ onClick={async () => {
         >
           Capture Photo
         </button>
+        
 
         <button
           style={closeBtn}
@@ -1428,9 +1557,12 @@ onClick={async () => {
           Cancel
         </button>
       </div>
+      
     </div>
+    
   </div>
 )}
+
 
     </div>
 

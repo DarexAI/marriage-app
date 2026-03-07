@@ -28,7 +28,13 @@ const PhysicalVerificationSchema = new mongoose.Schema({
     witness2: String,
     witness3: String
   },
-
+ biometrics: {
+    groom: String,
+    bride: String,
+    witness1: String,
+    witness2: String,
+    witness3: String
+  },
   officerRemarks: String,
 
   verifiedAt: {

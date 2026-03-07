@@ -110,6 +110,57 @@ const fetchSlots = async () => {
 
     fetchSlots();
   };
+  const generateFullDaySlots = async () => {
+  if (!date) {
+    alert("Please select a date first");
+    return;
+  }
+
+  const officer = JSON.parse(localStorage.getItem("officer") || "{}");
+
+  let startHour = 10;
+  let startMin = 0;
+
+  const slotsToCreate = [];
+
+  while (startHour < 17 || (startHour === 17 && startMin === 0)) {
+    let endHour = startHour;
+    let endMin = startMin + 30;
+
+    if (endMin === 60) {
+      endMin = 0;
+      endHour += 1;
+    }
+
+    const start = `${String(startHour).padStart(2, "0")}:${String(startMin).padStart(2, "0")}`;
+    const end = `${String(endHour).padStart(2, "0")}:${String(endMin).padStart(2, "0")}`;
+
+    slotsToCreate.push({
+      officerId: officer.officerId,
+      date,
+      startTime: start,
+      endTime: end
+    });
+
+    startHour = endHour;
+    startMin = endMin;
+
+    if (startHour === 17 && startMin === 0) break;
+  }
+
+  await Promise.all(
+    slotsToCreate.map(slot =>
+      fetch(`${import.meta.env.VITE_API_URL}/slots`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(slot)
+      })
+    )
+  );
+
+  setShowAddModal(false);
+  fetchSlots();
+};
 
   return (
     <>
@@ -295,6 +346,21 @@ const fetchSlots = async () => {
         >
           Save Slot
         </button>
+        <button
+  onClick={generateFullDaySlots}
+  style={{
+    background: "#1976d2",
+    color: "white",
+    border: "none",
+    padding: "10px 20px",
+    borderRadius: 8,
+    cursor: "pointer",
+    fontWeight: 600,
+    marginRight: 10
+  }}
+>
+  Generate Full Day Slots
+</button>
 
         <button
           onClick={() => setShowAddModal(false)}
@@ -307,6 +373,7 @@ const fetchSlots = async () => {
   </div>
 )}
       </div>
+      
     </div>
     <Footer/>
         </>

@@ -16,6 +16,10 @@ const [cpan, setCpan] = useState("");
 const validateForm = () => {
   const missing: string[] = [];
 
+   const oversized: string[] = [];
+
+  const maxSize = 2 * 1024 * 1024; // 2MB
+
   // List ALL required fields explicitly (clean names)
   const requiredFields = [
     // Groom
@@ -123,6 +127,12 @@ const validateForm = () => {
     alert("Please fill all mandatory fields before submitting.");
     return false;
   }
+
+   if (oversized.length > 0) {
+    alert("One or more documents exceed the 2MB size limit.");
+    return false;
+  }
+
 
   return true;
 };
@@ -513,7 +523,12 @@ const AddressFields = ({ prefix, formData, setFormData }: any) => (
 
 const Documents = ({ prefix, title, formData, setFormData }: any) => (
   <>
-    <h3 style={{ ...titleStyle, marginTop: 30 }}>{title}</h3>
+    <h3 style={{ ...titleStyle, marginTop: 30 }}>
+  {title}
+  <span style={{ color: "red", fontSize: 13, marginLeft: 10 }}>
+    (Max file size: 2MB)
+  </span>
+</h3>
 
     <div style={grid2}>
       <Field prefix={prefix} label="Photograph *" type="file" formData={formData} setFormData={setFormData} />
@@ -566,9 +581,12 @@ const PriestDetails = ({ prefix, formData, setFormData }: any) => (
 
 const MarriageDocuments = ({ prefix, formData, setFormData }: any) => (
   <>
-    <h3 style={{ ...titleStyle, marginTop: 30 }}>
-      Marriage Documents
-    </h3>
+<h3 style={{ ...titleStyle, marginTop: 30 }}>
+  Marriage Documents
+  <span style={{ color: "red", fontSize: 13, marginLeft: 10 }}>
+    (Max file size: 2MB)
+  </span>
+</h3>
 
     <div style={grid2}>
       <Field prefix={prefix} label="Wedding Card / Invitation *" type="file" formData={formData} setFormData={setFormData} />
@@ -604,9 +622,12 @@ const WitnessDetails = ({ prefix, number, formData, setFormData }: any) => (
 
 const WitnessDocuments = ({ prefix, number, formData, setFormData }: any) => (
   <>
-    <h3 style={{ ...titleStyle, marginTop: 30 }}>
-      Witness {number} Documents
-    </h3>
+<h3 style={{ ...titleStyle, marginTop: 30 }}>
+  Witness {number} Documents
+  <span style={{ color: "red", fontSize: 13, marginLeft: 10 }}>
+    (Max file size: 2MB)
+  </span>
+</h3>
 
     <div style={grid2}>
       <Field
@@ -656,16 +677,39 @@ const handleChange = (e: any) => {
     if (file) {
       const maxSize = 2 * 1024 * 1024; // 2MB
 
-      if (file.size > maxSize) {
-        alert("File must be less than 2 MB");
-        e.target.value = ""; // reset input
-        return;
-      }
+if (file.size > maxSize) {
+  alert("File size must be less than 2MB");
+  e.target.value = "";
+  return;
+}
     }
 
     val = file || null;
   } else {
-    val = e.target.value;
+  val = e.target.value;
+
+/* AUTO CALCULATE AGE FROM DOB */
+if (label.includes("Date of Birth")) {
+  const dob = new Date(val);
+  const today = new Date();
+
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+
+  const ageKey = `${prefix}_AgeatMarriage`;
+
+  setFormData((prev: any) => ({
+    ...prev,
+    [key]: val,
+    [ageKey]: age >= 0 ? age : "",
+  }));
+
+  return;
+}
 
     if (label.includes("Aadhaar")) {
       val = val.replace(/\D/g, "");
@@ -749,28 +793,14 @@ type === "file" ? (
         />
       ) :
 
-      label.includes("Age at Marriage") ? (
+label.includes("Age at Marriage") ? (
 <input
   type="number"
-  min="0"
-  style={input}
+  style={{ ...input, background: "#e9ecef", cursor: "not-allowed" }}
   value={formData[key] || ""}
-  onChange={handleChange}
-  onBlur={(e) => {
-    const age = parseInt(e.target.value);
-
-    if (!age) return;
-
-    if (prefix.includes("bride") && age < 18) {
-      alert("Bride age must be at least 18");
-    }
-
-    if (prefix.includes("groom") && age < 22) {
-      alert("Groom age must be at least 22");
-    }
-  }}
+  readOnly
 />
-      ) :
+):
 
       label.includes("Gender") ? (
         <select
