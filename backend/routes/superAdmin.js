@@ -15,6 +15,9 @@ const Certificate = require("../models/Certificate");
 const crypto = require("crypto");
 const  PublicKey = require("@solana/web3.js");
 const blockchainService = require("../services/blockchain");
+const Fingerprint = require("../models/Fingerprint");
+const sharp = require("sharp");
+const Jimp = require("jimp");
 const QRCode = require("qrcode");
 // =====================================================
 // OVERVIEW STATS
@@ -412,7 +415,7 @@ doc.font("Helvetica").fontSize(11)
     /* ===== PHOTOS FROM APPLICATION DOCUMENTS ===== */
 
 doc.moveDown(1);
-const imageY = doc.y;
+const imageY = doc.y-20;
 
 if (docs["groom_Photograph"]) {
   const g = await axios.get(docs["groom_Photograph"], {
@@ -821,6 +824,12 @@ router.get("/generate-goshvara/:id", protect, async (req, res) => {
     const app = verification.applicationId;
     const form = app.formData || {};
     const docs = app.documents || {};
+    const fingerprintDoc = await Fingerprint.findOne({
+  applicationId: app._id
+});
+
+const biometrics = fingerprintDoc?.biometrics || {};
+console.log("Fingerprint data:", biometrics);
 
     const doc = new PDFDocument({ size: "A4", margin: 25 });
     const buffers = [];
@@ -892,7 +901,7 @@ const drawMainTable = async (doc, form, docs, verification, page = 1) => {
     y += 25;
   };
 
-  const drawPersonRow = async (title, name, address, photoUrl) => {
+ const drawPersonRow = async (title, name, address, photoUrl, fingerprintUrl) => {
 
     // header labels row
     doc.rect(startX, y, col1, 25).stroke();
@@ -930,6 +939,32 @@ const drawMainTable = async (doc, form, docs, verification, page = 1) => {
         console.log("Image load error");
       }
     }
+    // ⭐ FINGERPRINT LOAD
+// ⭐ FINGERPRINT LOAD (FIXED)
+if (fingerprintUrl) {
+  try {
+    const fp = await axios.get(fingerprintUrl, {
+      responseType: "arraybuffer"
+    });
+
+    // Convert BMP → PNG using Jimp
+    const img = await Jimp.read(fp.data);
+    const pngBuffer = await img.getBufferAsync(Jimp.MIME_PNG);
+
+    doc.image(
+      pngBuffer,
+      startX + col1 + col2 + 10,
+      y + 10,
+      {
+        fit: [80, 80],
+        align: "center"
+      }
+    );
+
+  } catch (err) {
+    console.log("Fingerprint load error:", err.message);
+  }
+}
 
     y += 120;
   };
@@ -948,35 +983,40 @@ if (page === 1) {
     "वराची माहिती",
     `${form["groom_FirstName"] || ""} ${form["groom_LastName"] || ""}`,
     form["groom_CompleteAddressinEnglish"] || "N/A",
-    docs["groom_Photograph"]
+    docs["groom_Photograph"],
+    biometrics.groom
   );
 
   await drawPersonRow(
     "वधूची माहिती",
     `${form["bride_FirstName"] || ""} ${form["bride_LastName"] || ""}`,
     form["bride_CompleteAddressinEnglish"] || "N/A",
-    docs["bride_Photograph"]
+    docs["bride_Photograph"],
+    biometrics.bride
   );
 } else {
   await drawPersonRow(
     "साक्षीदार १",
     form["witness1_Witness1FullName"] || "",
     form["witness1_CompleteAddress"] || "N/A",
-    docs["witness1_Witness1Photo"]
+    docs["witness1_Witness1Photo"],
+    biometrics.witness1
   );
 
   await drawPersonRow(
     "साक्षीदार २",
     form["witness2_Witness2FullName"] || "",
     form["witness2_CompleteAddress"] || "N/A",
-    docs["witness2_Witness2Photo"]
+    docs["witness2_Witness2Photo"],
+    biometrics.witness2
   );
 
   await drawPersonRow(
     "साक्षीदार ३",
     form["witness3_Witness3FullName"] || "",
     form["witness3_CompleteAddress"] || "N/A",
-    docs["witness3_Witness3Photo"]
+    docs["witness3_Witness3Photo"],
+    biometrics.witness3
   );
 }
 
@@ -1359,11 +1399,11 @@ const photoHeight = 120;
 const photoWidth = 100;
 
 // Calculate safe photo Y
-let imageY = footerY - photoHeight - 30;
+let imageY = footerY - photoHeight - 40;
 
 // Ensure it never overlaps paragraph
 if (imageY < doc.y + 20) {
-  imageY = doc.y + 20;
+  imageY = doc.y + 10;
 }
 const centerX = BORDER_X + BORDER_WIDTH / 2;
 const gap = 60;
@@ -1794,7 +1834,7 @@ doc.image(placeholder, 420, imageY, { fit: [90, 110] });
    FOOTER (FIRST)
 ==========================*/
 
-const footerY = doc.page.height - 130;
+const footerY = doc.page.height - 150;
 
 doc.fillColor("black");
 

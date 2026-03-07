@@ -1,8 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const ApplyMarriageForm = () => {
-  const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<any>(() => {
+  const saved = localStorage.getItem("marriageFormData");
+  return saved ? JSON.parse(saved) : {};
+});
+
+const [step, setStep] = useState(() => {
+  const savedStep = localStorage.getItem("marriageFormStep");
+  return savedStep ? Number(savedStep) : 1;
+});
 const [isSubmitting, setIsSubmitting] = useState(false);
 
  const next = () => {
@@ -255,6 +262,27 @@ const validateStep = (currentStep: number) => {
   return true;
 };
 
+useEffect(() => {
+  const savedData = localStorage.getItem("marriageFormData");
+  const savedStep = localStorage.getItem("marriageFormStep");
+
+  if (savedData) {
+    setFormData(JSON.parse(savedData));
+  }
+
+  if (savedStep) {
+    setStep(Number(savedStep));
+  }
+}, []);
+
+useEffect(() => {
+  localStorage.setItem("marriageFormData", JSON.stringify(formData));
+}, [formData]);
+
+useEffect(() => {
+  localStorage.setItem("marriageFormStep", step.toString());
+}, [step]);
+
 const submitApplication = async () => {
   try {
     setIsSubmitting(true); // START LOADER
@@ -289,6 +317,8 @@ const submitApplication = async () => {
     const data = await res.json();
 
     if (data.success) {
+       localStorage.removeItem("marriageFormData");
+  localStorage.removeItem("marriageFormStep");
       setCpan(data.cpan);
       setShowSuccess(true);
       setTimeout(() => window.location.reload(), 1500);
@@ -446,6 +476,9 @@ const submitApplication = async () => {
       <p>
         Your marriage registration application has been
         submitted successfully.
+      </p>
+      <p>
+        Book the Available Slot for Physical Verification
       </p>
 
       <p style={{ marginTop: 10 }}>
@@ -970,6 +1003,8 @@ const input: React.CSSProperties = {
   borderRadius: 6,
   border: "1px solid #ccc",
   background: "#f5f6f8",
+   fontFamily: "inherit", 
+   fontSize: "14px",
   color: "black",
 };
 

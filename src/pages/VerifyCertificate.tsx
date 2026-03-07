@@ -70,6 +70,19 @@ const VerifyCertificate = () => {
           boxShadow: "0 4px 20px rgba(0,0,0,0.08)"
         }}>
 
+          {/* Logo */}
+<div style={{ textAlign: "center", marginBottom: "15px" }}>
+  <img
+    src="/logo.png"
+    alt="Logo"
+    style={{
+      width: "70px",
+      height: "70px",
+      objectFit: "contain"
+    }}
+  />
+</div>
+
           <h2 style={{
               textAlign: "center",
               marginBottom: "30px",

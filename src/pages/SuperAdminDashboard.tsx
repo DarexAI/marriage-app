@@ -10,14 +10,23 @@ const [toast, setToast] = useState<{
   type: "success" | "error";
 } | null>(null);
 const [reviewApp, setReviewApp] = useState<any>(null);
+const [fingerprints, setFingerprints] = useState<any>(null);
 const [records, setRecords] = useState<any[]>([]);
 const [recordFilter, setRecordFilter] = useState("month");
+const [fromDate, setFromDate] = useState("");
+const [toDate, setToDate] = useState("");
+const [filteredRecords, setFilteredRecords] = useState<any[]>([]);
   const [overview, setOverview] = useState<any>({});
   const [officers, setOfficers] = useState<any[]>([]);
   const [citizens, setCitizens] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
 const [showAddOfficer, setShowAddOfficer] = useState(false);
 const [issuingId, setIssuingId] = useState<string | null>(null);
+const [receiptLoading, setReceiptLoading] = useState<string | null>(null);
+const [goshvaraLoading, setGoshvaraLoading] = useState<string | null>(null);
+
+const [receiptIssued, setReceiptIssued] = useState<Record<string, boolean>>({});
+const [goshvaraIssued, setGoshvaraIssued] = useState<Record<string, boolean>>({});
 
 const [isMobile, setIsMobile] = useState(false);
 
@@ -27,6 +36,39 @@ useEffect(() => {
   window.addEventListener("resize", check);
   return () => window.removeEventListener("resize", check);
 }, []);
+useEffect(() => {
+  const savedReceipts = localStorage.getItem("issuedReceipts");
+  if (savedReceipts) {
+    setReceiptIssued(JSON.parse(savedReceipts));
+  }
+}, []);
+useEffect(() => {
+  const savedGoshvara = localStorage.getItem("issuedGoshvara");
+  if (savedGoshvara) {
+    setGoshvaraIssued(JSON.parse(savedGoshvara));
+  }
+}, []);
+
+useEffect(() => {
+  setFilteredRecords(records);
+}, [records]);
+
+useEffect(() => {
+  const saved = localStorage.getItem("issuedGoshvara");
+  if (!saved) return;
+
+  const parsed = JSON.parse(saved);
+
+  const updated: Record<string, boolean> = {};
+
+  applications.forEach((app: any) => {
+    if (parsed[app._id]) {
+      updated[app._id] = true;
+    }
+  });
+
+  setGoshvaraIssued(updated);
+}, [applications]);
 
 const [editOfficer, setEditOfficer] = useState<any>(null);
 const [approvingId, setApprovingId] = useState<string | null>(null);
@@ -71,7 +113,27 @@ const loadRecords = async (filter = "month") => {
   );
 
   const data = await res.json();
-  if (data.success) setRecords(data.records);
+  if (data.success) {
+  setRecords(data.records);
+  setFilteredRecords(data.records);   // ⭐ important
+}
+};
+
+const applyDateFilter = () => {
+  if (!fromDate || !toDate) {
+    showToast("Please select both dates", "error");
+    return;
+  }
+
+  const filtered = records.filter((r: any) => {
+    const recordDate = new Date(r.createdAt);
+    return (
+      recordDate >= new Date(fromDate) &&
+      recordDate <= new Date(toDate)
+    );
+  });
+
+  setFilteredRecords(filtered);
 };
 
   const loadCitizens = async () => {
@@ -101,6 +163,23 @@ const loadApplications = async () => {
     setApplications([]); // prevent crash
   }
 };
+
+useEffect(() => {
+  const savedReceipts = localStorage.getItem("issuedReceipts");
+  if (!savedReceipts) return;
+
+  const parsed = JSON.parse(savedReceipts);
+
+  const updated: Record<string, boolean> = {};
+
+  applications.forEach((app: any) => {
+    if (parsed[app._id]) {
+      updated[app._id] = true;
+    }
+  });
+
+  setReceiptIssued(updated);
+}, [applications]);
 
 const printRecords = () => {
   const printWindow = window.open("", "", "width=1000,height=700");
@@ -253,10 +332,26 @@ const handleReview = async (verificationId: string) => {
 
     const data = await res.json();
 
-    if (data.success) {
-      setReviewApp(data.app);
-    }
+if (data.success) {
+  setReviewApp(data.app);
 
+  console.log("Application data:", data.app);
+
+  const fpRes = await fetch(
+    `${import.meta.env.VITE_API_URL}/fingerprints/${data.app.applicationId._id}`,
+    {
+      headers: { Authorization: token || "" }
+    }
+  );
+
+  const fpData = await fpRes.json();
+
+  console.log("Fingerprint response:", fpData);
+
+  if (fpData.success) {
+    setFingerprints(fpData.biometrics);
+  }
+}  
   } catch (err) {
     console.log("Review load error", err);
   }
@@ -392,7 +487,7 @@ const formatLivePhotoLabel = (key: string) => {
               {t === "overview" && "Overview"}
               {t === "users" && "User Management"}
               {t === "applications" && "Applications"}
-              {t === "records" && "Records"}
+             {t === "records" && "Blockchain Verified Records"}
             </button>
           ))}
         </div>
@@ -632,13 +727,20 @@ const formatLivePhotoLabel = (key: string) => {
       ? "#28a745"
       : "#6f42c1",
     opacity: issuingId === app._id ? 0.7 : 1,
-    cursor: issuingId === app._id ? "not-allowed" : "pointer",
+    cursor: issuingId === app._id || !app.certificate
+      ? "not-allowed"
+      : "pointer",
     display: "flex",
     alignItems: "center",
     gap: 8
   }}
-  disabled={issuingId === app._id}
+  disabled={
+    issuingId === app._id ||
+    !app.certificate   // 🔒 disabled until approved in review tab
+  }
   onClick={async () => {
+
+    // ✅ VIEW CERTIFICATE
     if (app.certificate?.registeredOnChain) {
       if (app.certificate?.certificateUrl) {
         window.open(app.certificate.certificateUrl, "_blank");
@@ -648,8 +750,9 @@ const formatLivePhotoLabel = (key: string) => {
       return;
     }
 
+    // ✅ GENERATE CERTIFICATE
     try {
-      setIssuingId(app._id);   // 🔥 START LOADER
+      setIssuingId(app._id);
 
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/admin/blockchain/register`,
@@ -678,13 +781,11 @@ const formatLivePhotoLabel = (key: string) => {
       console.log(err);
       showToast("Blockchain error occurred", "error");
     } finally {
-      setIssuingId(null);  // 🔥 STOP LOADER
+      setIssuingId(null);
     }
   }}
 >
-  {issuingId === app._id && (
-    <span style={btnSpinner}></span>
-  )}
+  {issuingId === app._id && <span style={btnSpinner}></span>}
 
   {issuingId === app._id
     ? "Generating..."
@@ -694,9 +795,20 @@ const formatLivePhotoLabel = (key: string) => {
 </button>
 
 <button
-  style={certificateBtn}
+  style={{
+    ...certificateBtn,
+    background: receiptIssued[app._id] ? "#28a745" : "#3b6edc",
+    opacity: receiptLoading === app._id ? 0.7 : 1,
+    cursor: receiptLoading === app._id ? "not-allowed" : "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: 6
+  }}
+  disabled={receiptLoading === app._id}
   onClick={async () => {
     try {
+      setReceiptLoading(app._id);
+
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/admin/generate-receipt/${app._id}`,
         {
@@ -708,6 +820,17 @@ const formatLivePhotoLabel = (key: string) => {
 
       if (data.success) {
         window.open(data.url, "_blank");
+
+setReceiptIssued(prev => {
+  const updated = {
+    ...prev,
+    [app._id]: true
+  };
+
+  localStorage.setItem("issuedReceipts", JSON.stringify(updated));
+
+  return updated;
+});
       } else {
         showToast("Failed to generate receipt", "error");
       }
@@ -715,19 +838,28 @@ const formatLivePhotoLabel = (key: string) => {
     } catch (err) {
       console.log(err);
       showToast("Receipt generation error", "error");
+    } finally {
+      setReceiptLoading(null);
     }
   }}
 >
-  Show Receipt to User
-</button>
+  {receiptLoading === app._id && <span style={btnSpinner}></span>}
 
+  {receiptLoading === app._id
+    ? "Generating..."
+    : receiptIssued[app._id]
+    ? "Issued Receipt"
+    : "Show Receipt to User"}
+</button>
 <button
   disabled={
     !app.certificate?.registeredOnChain ||
-    app.certificate?.blockchainStatus !== "confirmed"
+    app.certificate?.blockchainStatus !== "confirmed" ||
+    goshvaraLoading === app._id
   }
   style={{
     ...certificateBtn,
+    background: goshvaraIssued[app._id] ? "#28a745" : "#3b6edc",
     opacity:
       app.certificate?.registeredOnChain &&
       app.certificate?.blockchainStatus === "confirmed"
@@ -737,7 +869,10 @@ const formatLivePhotoLabel = (key: string) => {
       app.certificate?.registeredOnChain &&
       app.certificate?.blockchainStatus === "confirmed"
         ? "pointer"
-        : "not-allowed"
+        : "not-allowed",
+    display: "flex",
+    alignItems: "center",
+    gap: 6
   }}
   onClick={async () => {
     if (
@@ -746,16 +881,45 @@ const formatLivePhotoLabel = (key: string) => {
     )
       return;
 
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/admin/generate-goshvara/${app._id}`,
-      { headers: { Authorization: token || "" } }
-    );
+    try {
+      setGoshvaraLoading(app._id);
 
-    const data = await res.json();
-    if (data.success) window.open(data.url, "_blank");
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/admin/generate-goshvara/${app._id}`,
+        { headers: { Authorization: token || "" } }
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        window.open(data.url, "_blank");
+
+setGoshvaraIssued(prev => {
+  const updated = {
+    ...prev,
+    [app._id]: true
+  };
+
+  localStorage.setItem("issuedGoshvara", JSON.stringify(updated));
+
+  return updated;
+});
+      }
+
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setGoshvaraLoading(null);
+    }
   }}
 >
-  {app.certificate?.registeredOnChain ? "Generate Goshvara" : "Goshvara 🔒"}
+  {goshvaraLoading === app._id && <span style={btnSpinner}></span>}
+
+  {goshvaraLoading === app._id
+    ? "Generating..."
+    : goshvaraIssued[app._id]
+    ? "Goshvara Generated"
+    : "Generate Goshvara"}
 </button>
 </div>
             </td>
@@ -773,18 +937,47 @@ const formatLivePhotoLabel = (key: string) => {
 
     {/* FILTER */}
     <div style={{ marginBottom: 20, display: "flex", gap: 12 }}>
-      <select
-        value={recordFilter}
-        onChange={(e) => {
-          setRecordFilter(e.target.value);
-          loadRecords(e.target.value);
-        }}
-        style={input}
-      >
+<select
+  value={recordFilter}
+  onChange={(e) => {
+    const value = e.target.value;
+    setRecordFilter(value);
+
+    if (value !== "range") {
+      loadRecords(value);
+    }
+  }}
+  style={input}
+>
         <option value="today">Today</option>
         <option value="week">Last 7 Days</option>
         <option value="month">Last 30 Days</option>
+        <option value="range">Date Range</option>
       </select>
+      {recordFilter === "range" && (
+  <>
+    <input
+      type="date"
+      value={fromDate}
+      onChange={(e) => setFromDate(e.target.value)}
+      style={input}
+    />
+
+    <input
+      type="date"
+      value={toDate}
+      onChange={(e) => setToDate(e.target.value)}
+      style={input}
+    />
+
+    <button
+      style={primaryBtn}
+      onClick={applyDateFilter}
+    >
+      Filter
+    </button>
+  </>
+)}
       <button
   style={primaryBtn}
   onClick={printRecords}
@@ -818,7 +1011,7 @@ const formatLivePhotoLabel = (key: string) => {
         </thead>
 
         <tbody>
-          {records.map((r, i) => (
+          {filteredRecords.map((r, i) => (
             <tr key={i} style={row}>
               <td style={td}>{r.cpan}</td>
               <td style={td}>
@@ -988,6 +1181,48 @@ const formatLivePhotoLabel = (key: string) => {
           )}
         </div>
       </div>
+      <div style={sectionBox}>
+  <h3>Fingerprints</h3>
+
+  <div style={docGrid}>
+
+    {fingerprints?.groom && (
+      <div style={docCard}>
+        <b>Groom Fingerprint</b>
+        <img src={fingerprints.groom} style={docImg} />
+      </div>
+    )}
+
+    {fingerprints?.bride && (
+      <div style={docCard}>
+        <b>Bride Fingerprint</b>
+        <img src={fingerprints.bride} style={docImg} />
+      </div>
+    )}
+
+    {fingerprints?.witness1 && (
+      <div style={docCard}>
+        <b>Witness 1 Fingerprint</b>
+        <img src={fingerprints.witness1} style={docImg} />
+      </div>
+    )}
+
+    {fingerprints?.witness2 && (
+      <div style={docCard}>
+        <b>Witness 2 Fingerprint</b>
+        <img src={fingerprints.witness2} style={docImg} />
+      </div>
+    )}
+
+    {fingerprints?.witness3 && (
+      <div style={docCard}>
+        <b>Witness 3 Fingerprint</b>
+        <img src={fingerprints.witness3} style={docImg} />
+      </div>
+    )}
+
+  </div>
+</div>
 
 <div style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}>
 

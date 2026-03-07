@@ -275,7 +275,7 @@ cursor: selectedSlot ? "not-allowed" : "pointer",
         height: "fit-content"
       }}
     >
-      Select Slot
+      Book Slot
     </button>
   )}
 </div>
@@ -462,7 +462,48 @@ maxWidth: 100,
         </p>
 
 <h4 style={{ marginTop: 20 }}>Application Details</h4>
+<SectionCard title="Generated Documents">
 
+  {!cpan && (
+    <Field label="Status" value="No application found." full />
+  )}
+
+  {cpan && checkingDocs && (
+    <Field label="Status" value="Checking documents..." full />
+  )}
+
+  {cpan && !checkingDocs && documents && (
+    <>
+      {documents.certificateUrl && (
+        <DocumentCard
+          label="Marriage Certificate"
+          url={documents.certificateUrl}
+        />
+      )}
+
+      {documents.receiptUrl && (
+        <DocumentCard
+          label="Payment Receipt"
+          url={documents.receiptUrl}
+        />
+      )}
+
+      {documents.goshvaraUrl && (
+        <DocumentCard
+          label="Goshvara"
+          url={documents.goshvaraUrl}
+        />
+      )}
+
+      {!documents.certificateUrl &&
+        !documents.receiptUrl &&
+        !documents.goshvaraUrl && (
+          <Field label="Status" value="No documents generated yet." full />
+        )}
+    </>
+  )}
+
+</SectionCard>
 {/* GROOM SECTION */}
 <SectionCard title="Groom Details">
   <Field label="Full Name"
@@ -553,48 +594,7 @@ maxWidth: 100,
 </SectionCard>
 {/* GENERATED DOCUMENTS (CERTIFICATE / RECEIPT / GOSHVARA) */}
 
-<SectionCard title="Generated Documents">
 
-  {!cpan && (
-    <Field label="Status" value="No application found." full />
-  )}
-
-  {cpan && checkingDocs && (
-    <Field label="Status" value="Checking documents..." full />
-  )}
-
-  {cpan && !checkingDocs && documents && (
-    <>
-      {documents.certificateUrl && (
-        <DocumentCard
-          label="Marriage Certificate"
-          url={documents.certificateUrl}
-        />
-      )}
-
-      {documents.receiptUrl && (
-        <DocumentCard
-          label="Payment Receipt"
-          url={documents.receiptUrl}
-        />
-      )}
-
-      {documents.goshvaraUrl && (
-        <DocumentCard
-          label="Goshvara"
-          url={documents.goshvaraUrl}
-        />
-      )}
-
-      {!documents.certificateUrl &&
-        !documents.receiptUrl &&
-        !documents.goshvaraUrl && (
-          <Field label="Status" value="No documents generated yet." full />
-        )}
-    </>
-  )}
-
-</SectionCard>
 
       </>
     )}

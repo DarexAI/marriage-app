@@ -110,7 +110,7 @@ const fetchSlots = async () => {
 
     fetchSlots();
   };
-  const generateFullDaySlots = async () => {
+const generateDaySlots = async () => {
   if (!date) {
     alert("Please select a date first");
     return;
@@ -118,35 +118,28 @@ const fetchSlots = async () => {
 
   const officer = JSON.parse(localStorage.getItem("officer") || "{}");
 
-  let startHour = 10;
-  let startMin = 0;
+  const timeSlots = [
+    ["10:00 AM","10:30 AM"],
+    ["10:30 AM","11:00 AM"],
+    ["11:00 AM","11:30 AM"],
+    ["11:30 AM","12:00 PM"],
+    ["12:00 PM","12:30 PM"],
+    ["12:30 PM","01:00 PM"],
+    ["01:00 PM","01:30 PM"],
+    ["02:00 PM","02:30 PM"],
+    ["02:30 PM","03:00 PM"],
+    ["03:00 PM","03:30 PM"],
+    ["03:30 PM","04:00 PM"],
+    ["04:00 PM","04:30 PM"],
+    ["04:30 PM","05:00 PM"]
+  ];
 
-  const slotsToCreate = [];
-
-  while (startHour < 17 || (startHour === 17 && startMin === 0)) {
-    let endHour = startHour;
-    let endMin = startMin + 30;
-
-    if (endMin === 60) {
-      endMin = 0;
-      endHour += 1;
-    }
-
-    const start = `${String(startHour).padStart(2, "0")}:${String(startMin).padStart(2, "0")}`;
-    const end = `${String(endHour).padStart(2, "0")}:${String(endMin).padStart(2, "0")}`;
-
-    slotsToCreate.push({
-      officerId: officer.officerId,
-      date,
-      startTime: start,
-      endTime: end
-    });
-
-    startHour = endHour;
-    startMin = endMin;
-
-    if (startHour === 17 && startMin === 0) break;
-  }
+  const slotsToCreate = timeSlots.map(([start,end]) => ({
+    officerId: officer.officerId,
+    date,
+    startTime: start,
+    endTime: end
+  }));
 
   await Promise.all(
     slotsToCreate.map(slot =>
@@ -347,7 +340,7 @@ const fetchSlots = async () => {
           Save Slot
         </button>
         <button
-  onClick={generateFullDaySlots}
+onClick={generateDaySlots}
   style={{
     background: "#1976d2",
     color: "white",
@@ -359,7 +352,7 @@ const fetchSlots = async () => {
     marginRight: 10
   }}
 >
-  Generate Full Day Slots
+  Generate full day slots
 </button>
 
         <button

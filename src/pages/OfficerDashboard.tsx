@@ -87,6 +87,7 @@ const [stream, setStream] = useState<any>(null);
 const [documentsVerified, setDocumentsVerified] = useState(false);
 const [citizens, setCitizens] = useState<any[]>([]);
 const [viewCitizen, setViewCitizen] = useState<any>(null);
+const [savingVerification, setSavingVerification] = useState(false);
 const [officer] = useState<any>(() => {
   const stored = localStorage.getItem("officer");
   return stored ? JSON.parse(stored) : null;
@@ -680,7 +681,7 @@ onClick={() => {
       }
     }}
   >
-    View
+    Edit
   </button>
 
   {/* SHOW ONLY AFTER PHYSICAL VERIFICATION */}
@@ -1159,56 +1160,81 @@ border: "1px solid #ddd"
 </tbody>
 </table>
 
-      <button
-        style={scheduleBtn}
-onClick={async () => {
-  const officer = JSON.parse(
-    localStorage.getItem("officer") || "{}"
-  );
+<button
+  style={{
+    ...scheduleBtn,
+    opacity: savingVerification ? 0.7 : 1,
+    cursor: savingVerification ? "not-allowed" : "pointer",
+    position: "relative"
+  }}
+  disabled={savingVerification}
+  onClick={async () => {
+    setSavingVerification(true);
 
-  const groomUrl = await uploadToCloudinary(groomPhoto);
-  const brideUrl = await uploadToCloudinary(bridePhoto);
-  const w1Url = await uploadToCloudinary(w1Photo);
-  const w2Url = await uploadToCloudinary(w2Photo);
-  const w3Url = await uploadToCloudinary(w3Photo);
+    try {
+      const officer = JSON.parse(
+        localStorage.getItem("officer") || "{}"
+      );
 
+      const groomUrl = await uploadToCloudinary(groomPhoto);
+      const brideUrl = await uploadToCloudinary(bridePhoto);
+      const w1Url = await uploadToCloudinary(w1Photo);
+      const w2Url = await uploadToCloudinary(w2Photo);
+      const w3Url = await uploadToCloudinary(w3Photo);
 
-    await uploadFingerprint(groomFingerprint, "groom");
-  await uploadFingerprint(brideFingerprint, "bride");
-  await uploadFingerprint(w1Fingerprint, "witness1");
-  await uploadFingerprint(w2Fingerprint, "witness2");
-  await uploadFingerprint(w3Fingerprint, "witness3");
+      await uploadFingerprint(groomFingerprint, "groom");
+      await uploadFingerprint(brideFingerprint, "bride");
+      await uploadFingerprint(w1Fingerprint, "witness1");
+      await uploadFingerprint(w2Fingerprint, "witness2");
+      await uploadFingerprint(w3Fingerprint, "witness3");
 
-
-  await fetch(
-    `${import.meta.env.VITE_API_URL}/physical-verify`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        applicationId: verifyApp._id,
-        cpan: verifyApp.cpan,
-        officerId: officer.officerId,
-        documentsVerified,
-        livePhotos: {
-          groom: groomUrl,
-          bride: brideUrl,
-          witness1: w1Url,
-          witness2: w2Url,
-          witness3: w3Url
+      await fetch(
+        `${import.meta.env.VITE_API_URL}/physical-verify`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            applicationId: verifyApp._id,
+            cpan: verifyApp.cpan,
+            officerId: officer.officerId,
+            documentsVerified,
+            livePhotos: {
+              groom: groomUrl,
+              bride: brideUrl,
+              witness1: w1Url,
+              witness2: w2Url,
+              witness3: w3Url
+            }
+          })
         }
-      })
+      );
+
+      setPopup({ message: "Verification saved", type: "success" });
+
+      setVerifyApp(null);
+    } catch (err) {
+      setPopup({ message: "Verification failed", type: "error" });
     }
-  );
 
-  setPopup({ message: "Verification saved", type: "success" });
-
-  setVerifyApp(null);
-}}
-      >
-        Save Verification
-      </button>
-
+    setSavingVerification(false);
+  }}
+>
+  {savingVerification ? (
+    <span
+      style={{
+        width: 16,
+        height: 16,
+        border: "3px solid white",
+        borderTop: "3px solid transparent",
+        borderRadius: "50%",
+        display: "inline-block",
+        animation: "spinInline 0.7s linear infinite"
+      }}
+    />
+  ) : (
+    "Save Verification"
+  )}
+</button>
       <button
         style={closeBtn}
         onClick={() => setVerifyApp(null)}

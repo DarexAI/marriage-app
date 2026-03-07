@@ -81,4 +81,39 @@ router.post(
   }
 );
 
+/* ==================================
+   GET FINGERPRINTS BY APPLICATION
+================================== */
+
+router.get("/fingerprints/:applicationId", async (req, res) => {
+  try {
+
+    const { applicationId } = req.params;
+
+    const fingerprint = await Fingerprint.findOne({ applicationId });
+
+    if (!fingerprint) {
+      return res.json({
+        success: true,
+        biometrics: {}
+      });
+    }
+
+    res.json({
+      success: true,
+      biometrics: fingerprint.biometrics
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch fingerprints"
+    });
+
+  }
+});
+
 module.exports = router;
