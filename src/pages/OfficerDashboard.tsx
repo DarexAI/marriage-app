@@ -356,7 +356,7 @@ const uploadToCloudinary = async (image: string) => {
 
 const captureFingerprint = async (setter: any) => {
   try {
-    const res = await fetch("http://127.0.0.1:18080/fingerprint");
+    const res = await fetch("http://127.0.0.1:18100/fingerprint/");
     const data = await res.json();
 
     if (data.success) {
